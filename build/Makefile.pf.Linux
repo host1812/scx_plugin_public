@@ -139,6 +139,9 @@ COREPROVIDERMODULE_EXTRA_LINKFLAGS=-Wl,--version-script=$(INTERMEDIATE_DIR)/core
 # Test Provider specific link flags. Used to hide symbols
 TESTPROVIDERMODULE_EXTRA_LINKFLAGS=-Wl,--version-script=$(INTERMEDIATE_DIR)/testprovider.map
 
+# WK Provider specific link flags. Used to hide symbols
+WKPROVIDERMODULE_EXTRA_LINKFLAGS=-Wl,--version-script=$(INTERMEDIATE_DIR)/wkprovider.map
+
 # The testrunner links with these
 LDFLAGS_TESTRUNNER = $(LDFLAGS_EXECUTABLE)   
 

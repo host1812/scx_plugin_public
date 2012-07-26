@@ -19,6 +19,19 @@ STATIC_TESTPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_TESTPROVIDERLIB_SRC
 $(INTERMEDIATE_DIR)/libtestprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_TESTPROVIDERLIB_OBJFILES)
 	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
 
+#--------------------------------------------------------------------------------
+# WK Provider
+
+STATIC_WKPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/shared/scxsystemlib/common/entityinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testenumeration.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testprovider.cpp \
+
+STATIC_WKPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_WKPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libwkprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_WKPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
 
 #--------------------------------------------------------------------------------
 # Provider Support Library

@@ -106,6 +106,12 @@ TESTPROVIDERMODULE_EXPOSED_SYMS= \
 	SCX_TestProvider_Create_InstanceMI \
 	SCX_TestProvider_Create_MethodMI \
 
+# List of symbols which shall be exposed by the libSCXWkProviderModule
+WKPROVIDERMODULE_EXPOSED_SYMS= \
+	SCX_MetaProvider_Create_InstanceMI \
+	SCX_MetaProvider_Create_MethodMI \
+	SCX_TestProvider_Create_InstanceMI \
+	SCX_TestProvider_Create_MethodMI \
 
 #================================================================================
 # Internal functions

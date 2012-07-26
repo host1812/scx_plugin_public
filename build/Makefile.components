@@ -119,6 +119,39 @@ $(INTERMEDIATE_DIR)/testprovider.map:
 $(INTERMEDIATE_DIR)/testprovider.exp:
 	$(foreach SYM,$(TESTPROVIDERMODULE_EXPOSED_SYMS),$(shell echo $(EXPOSED_SYMS_PREFIX)$(SYM) >> $@))
 
+#--------------------------------------------------------------------------------
+# The WK Provider Module library
+
+# The static libraries prerequisite list, expands to e.g. libXYZ.a
+WKPROVIDERMODULE_STATICLIB_DEPS = \
+	metaprovider \
+	palsystem \
+	wkprovider \
+	providersupport \
+	scxassertabort \
+	scxcore \
+	logpolicy \
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+WKPROVIDERMODULE_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(WKPROVIDERMODULE_STATICLIB_DEPS)))
+
+# Foreach XYZ in the list above, build -lXYZ
+WKPROVIDERMODULE_LINK_STATICLIBS = $(addprefix -l, $(WKPROVIDERMODULE_STATICLIB_DEPS))
+
+# Get the flags used for retaining exposed symbols
+WKPROVIDERMODULE_SYMBOLS_LINKFLAGS = $(call get_ld_flags_for_retaining_symbols,$(WKPROVIDERMODULE_EXPOSED_SYMS))
+
+$(TARGET_DIR)/libSCXWkProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) : $(WKPROVIDERMODULE_STATICLIB_DEPFILES) $(INTERMEDIATE_DIR)/wkprovider.map $(INTERMEDIATE_DIR)/wkprovider.exp
+	-$(MKPATH) $(TARGET_DIR)
+	$(PROFILING) $(LINK_DYNLIB) $(WKPROVIDERMODULE_EXTRA_LINKFLAGS) $(LINK_OUTFLAG) $(WKPROVIDERMODULE_SYMBOLS_LINKFLAGS) $(WKPROVIDERMODULE_LINK_STATICLIBS) $(LDFLAGS_WKPROVIDERMODULE) $(PF_WKPROVIDERLIB_EXTRA_LIBS)
+
+$(INTERMEDIATE_DIR)/wkprovider.map:
+	@echo "{ global: " > $@
+	@echo "$(addsuffix ;, $(WKPROVIDERMODULE_EXPOSED_SYMS))" >> $@
+	@echo "local: *; };" >> $@
+
+$(INTERMEDIATE_DIR)/wkprovider.exp:
+	$(foreach SYM,$(WKPROVIDERMODULE_EXPOSED_SYMS),$(shell echo $(EXPOSED_SYMS_PREFIX)$(SYM) >> $@))
 
 #================================================================================
 # Administration Tool
@@ -256,8 +289,10 @@ coreprovider: \
 	$(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
 
 providers: \
-	$(TARGET_DIR)/libSCXTestProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) \
-	$(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
+	$(TARGET_DIR)/libSCXWkProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) \
+	$(TARGET_DIR)/libSCXTestProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
+
+# $(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
 
 # An alias 
 pegasus: pegasus_all

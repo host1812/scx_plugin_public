@@ -1,0 +1,71 @@
+#pragma locale ("en_US")
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+//
+// ===================================================================
+// Test Provider
+// ===================================================================
+   [Version ( "0.0.1" ), Description (
+       "A test CIM class, provided by the test provider.")]
+class SCX_Test1 : CIM_ManagedElement {
+
+	[Key, Override( "Name" ) ]
+	string Name;
+
+    [Description ( "If data is aggregated from several instances" ) ]
+    boolean IsAggregate;
+
+	[Description ( "A dummy property of uint32 type" ) ]
+	uint32 ValueA;
+	
+	[Description ( "Another dummy property of uint32 type" ) ]
+	uint32 ValueB; 
+
+	[Description ( "Another dummy property of datetime type" ) ]
+	datetime ValueC; 
+
+	[Description ( "Another dummy property of uint32 array type" ) ]
+	uint32 ValueD[]; 
+
+	[Description ( "Another dummy property of string array type" ) ]
+	String ValueE[]; 
+
+	[Description ( "Another dummy property of datetime array type" ) ]
+	datetime ValueF[]; 
+
+	[Description ( "A dummy method" ) ]
+	boolean SomeMethod([IN] String input,
+					   [OUT] String response);
+	
+	boolean OtherMethod([IN] String input,
+ 					    [OUT] String response);
+
+	[Description ( "A dummy method demonstrating support for arrays" ) ]
+	boolean ArrayMethod([IN] String input[],
+ 					    [OUT] String response[]);
+};
+
+
+
+	[Version ( "0.0.1" ), Description (
+       "A test CIM class, provided by the test provider.")]
+class SCX_Test2 : CIM_ManagedElement {
+
+	[Key, Override( "Name" ) ]
+	string Name;
+
+    [Description ( "If data is aggregated from several instances" ) ]
+    boolean IsAggregate;
+
+	[Description ( "A dummy property of uint32 type" ) ]
+	uint32 ValueA;
+	
+	[Description ( "Another dummy property of uint32 type" ) ]
+	uint32 ValueB; 
+
+	[Description ( "A dummy method" ) ]
+	boolean SomeMethod([IN] String input,
+					   [OUT] String response);
+	
+};

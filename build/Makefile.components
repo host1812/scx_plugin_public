@@ -90,6 +90,8 @@ $(INTERMEDIATE_DIR)/coreprovider.exp:
 
 # The static libraries prerequisite list, expands to e.g. libXYZ.a
 TESTPROVIDERMODULE_STATICLIB_DEPS = \
+	metaprovider \
+	palsystem \
 	testprovider \
 	providersupport \
 	scxassertabort \

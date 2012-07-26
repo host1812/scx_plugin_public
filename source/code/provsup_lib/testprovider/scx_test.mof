@@ -8,7 +8,7 @@
 // ===================================================================
    [Version ( "0.0.1" ), Description (
        "A test CIM class, provided by the test provider.")]
-class SCX_Test1 : CIM_SystemResource {
+class SCX_Test1 : CIM_ManagedElement {
 
 	[Key, Override( "Name" ) ]
 	string Name;
@@ -50,7 +50,7 @@ class SCX_Test1 : CIM_SystemResource {
 
 	[Version ( "0.0.1" ), Description (
        "A test CIM class, provided by the test provider.")]
-class SCX_Test2 : CIM_SystemResource {
+class SCX_Test2 : CIM_ManagedElement {
 
 	[Key, Override( "Name" ) ]
 	string Name;

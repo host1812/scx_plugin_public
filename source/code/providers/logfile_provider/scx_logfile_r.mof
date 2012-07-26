@@ -1,0 +1,33 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXUserCoreProviderModule";
+   Name = "SCX_LogFileProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXUserCoreProviderModule";
+   ProviderName = "SCX_LogFileProvider";
+   CapabilityID = "8";
+   ClassName = "SCX_LogFile";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2, 5 }; // Instance & Method
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXUserCoreProviderModule";
+   ProviderName = "SCX_LogFileProvider";
+   CapabilityID = "9";
+   ClassName = "SCX_LogFileRecord";
+   Namespaces = {"root/scx"};
+   ProviderType = { 7 }; // Query
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};

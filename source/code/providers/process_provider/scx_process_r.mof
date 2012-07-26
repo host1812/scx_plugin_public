@@ -1,0 +1,34 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   Name = "SCX_ProcessProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_ProcessProvider";
+   CapabilityID = "5";
+   ClassName = "SCX_UnixProcess";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2, 5 }; // Instance, Method
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_ProcessProvider";
+   CapabilityID = "6";
+   ClassName = "SCX_UnixProcessStatisticalInformation";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2, 5 }; // Instance, Method
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+

@@ -1,0 +1,382 @@
+# -*- mode: Makefile; -*- 
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+#--------------------------------------------------------------------------------
+
+#================================================================================
+# Static Libraries
+#================================================================================
+
+include $(SCX_BRD)/build/Makefile.scxcorelib
+include $(SCX_BRD)/build/Makefile.scxsystemlib
+include $(SCX_BRD)/build/Makefile.sslconfig
+include $(SCX_BRD)/build/Makefile.provsuplib
+include $(SCX_BRD)/build/Makefile.providers
+
+#--------------------------------------------------------------------------------
+# Log policy
+
+STATIC_LOGPOLICYLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/meta_provider/logpolicy.cpp
+
+STATIC_LOGPOLICYLIB_OBJFILES = $(call src_to_obj,$(STATIC_LOGPOLICYLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/liblogpolicy.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_LOGPOLICYLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#================================================================================
+# Dynamic libraries
+#================================================================================
+
+#--------------------------------------------------------------------------------
+# The Core Provider Module library
+
+# The static libraries prerequisite list, expands to e.g. libXYZ.a
+ifeq ($(SCX_STACK_ONLY), true)
+COREPROVIDERMODULE_STATICLIB_DEPS = \
+	metaprovider \
+	palsystem \
+	providersupport \
+	scxassertabort \
+	scxcore \
+	logpolicy \
+
+else          # For a full agent, use this set
+COREPROVIDERMODULE_STATICLIB_DEPS += \
+	cpuprovider \
+	networkprovider \
+	diskprovider \
+	memoryprovider \
+	osprovider \
+	processprovider \
+	runasprovider \
+	logfileprovider \
+	asprovider \
+	metaprovider \
+	palsystem \
+	providersupport \
+	scxassertabort \
+	scxcore \
+	logpolicy \
+
+endif
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+COREPROVIDERMODULE_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(COREPROVIDERMODULE_STATICLIB_DEPS)))
+
+# Foreach XYZ in the list above, build -lXYZ
+COREPROVIDERMODULE_LINK_STATICLIBS = $(addprefix -l, $(COREPROVIDERMODULE_STATICLIB_DEPS))
+
+# Get the flags used for retaining exposed symbols
+COREPROVIDERMODULE_SYMBOLS_LINKFLAGS = $(call get_ld_flags_for_retaining_symbols,$(COREPROVIDERMODULE_EXPOSED_SYMS))
+
+$(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) : $(COREPROVIDERMODULE_STATICLIB_DEPFILES) $(INTERMEDIATE_DIR)/coreprovider.map $(INTERMEDIATE_DIR)/coreprovider.exp
+	-$(MKPATH) $(TARGET_DIR)
+	$(PROFILING) $(LINK_DYNLIB) $(COREPROVIDERMODULE_EXTRA_LINKFLAGS) $(LINK_OUTFLAG) $(COREPROVIDERMODULE_SYMBOLS_LINKFLAGS) $(COREPROVIDERMODULE_LINK_STATICLIBS) $(LDFLAGS_COREPROVIDERMODULE) $(PF_COREPROVIDERLIB_EXTRA_LIBS) $(CORELIB_ROOT)/pal/noop.cpp
+
+$(INTERMEDIATE_DIR)/coreprovider.map:
+	@echo "{ global: " > $@
+	@echo "$(addsuffix ;, $(COREPROVIDERMODULE_EXPOSED_SYMS))" >> $@
+	@echo "local: *; };" >> $@
+
+$(INTERMEDIATE_DIR)/coreprovider.exp:
+	$(foreach SYM,$(COREPROVIDERMODULE_EXPOSED_SYMS),$(shell echo $(EXPOSED_SYMS_PREFIX)$(SYM) >> $@))
+
+#--------------------------------------------------------------------------------
+# The Test Provider Module library
+
+# The static libraries prerequisite list, expands to e.g. libXYZ.a
+TESTPROVIDERMODULE_STATICLIB_DEPS = \
+	testprovider \
+	providersupport \
+	scxassertabort \
+	scxcore \
+	logpolicy \
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+TESTPROVIDERMODULE_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(TESTPROVIDERMODULE_STATICLIB_DEPS)))
+
+# Foreach XYZ in the list above, build -lXYZ
+TESTPROVIDERMODULE_LINK_STATICLIBS = $(addprefix -l, $(TESTPROVIDERMODULE_STATICLIB_DEPS))
+
+# Get the flags used for retaining exposed symbols
+TESTPROVIDERMODULE_SYMBOLS_LINKFLAGS = $(call get_ld_flags_for_retaining_symbols,$(TESTPROVIDERMODULE_EXPOSED_SYMS))
+
+$(TARGET_DIR)/libSCXTestProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) : $(TESTPROVIDERMODULE_STATICLIB_DEPFILES) $(INTERMEDIATE_DIR)/testprovider.map $(INTERMEDIATE_DIR)/testprovider.exp
+	-$(MKPATH) $(TARGET_DIR)
+	$(PROFILING) $(LINK_DYNLIB) $(TESTPROVIDERMODULE_EXTRA_LINKFLAGS) $(LINK_OUTFLAG) $(TESTPROVIDERMODULE_SYMBOLS_LINKFLAGS) $(TESTPROVIDERMODULE_LINK_STATICLIBS) $(LDFLAGS_TESTPROVIDERMODULE) $(PF_TESTPROVIDERLIB_EXTRA_LIBS)
+
+$(INTERMEDIATE_DIR)/testprovider.map:
+	@echo "{ global: " > $@
+	@echo "$(addsuffix ;, $(TESTPROVIDERMODULE_EXPOSED_SYMS))" >> $@
+	@echo "local: *; };" >> $@
+
+$(INTERMEDIATE_DIR)/testprovider.exp:
+	$(foreach SYM,$(TESTPROVIDERMODULE_EXPOSED_SYMS),$(shell echo $(EXPOSED_SYMS_PREFIX)$(SYM) >> $@))
+
+
+#================================================================================
+# Administration Tool
+#================================================================================
+
+SCXADMIN_DIR=$(SCX_SRC_ROOT)/shared/tools/scx_admin
+
+# Static lib files for admin tool
+STATIC_SCXADMIN_SRCFILES = \
+	$(SCXADMIN_DIR)/servicecontrol.cpp \
+	$(SCXADMIN_DIR)/cimconfigurator.cpp \
+	$(SCXADMIN_DIR)/logconfigurator.cpp \
+	$(SCXADMIN_DIR)/cmdparser.cpp \
+
+ifneq ($(SCX_STACK_ONLY), true)      # For a full agent, also include these:
+STATIC_SCXADMIN_SRCFILES += \
+	$(SCXADMIN_DIR)/runasadminprovider.cpp \
+
+endif
+
+STATIC_SCXADMIN_OBJFILES = $(call src_to_obj,$(STATIC_SCXADMIN_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libscxadmin.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_SCXADMIN_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+# The main program
+SCXADMIN_SRCFILES=\
+	$(SCXADMIN_DIR)/scx_admin.cpp 
+
+SCXADMIN_OBJFILES = $(call src_to_obj,$(SCXADMIN_SRCFILES))
+
+
+SCXADMIN_DEPFILES=$(SCXADMIN_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d) $(STATIC_SCXADMIN_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d) 
+
+# Static dependencies on POSIX platforms
+SCXADMIN_STATICLIB_DEPS = \
+	scxassertabort \
+	scxadmin \
+	palsystem \
+	providersupport \
+	scxcore scxassertabort scxcore \
+	metaprovider
+
+ifneq ($(SCX_STACK_ONLY), true)      # For a full agent, also include these:
+SCXADMIN_STATICLIB_DEPS += \
+	runasprovider \
+
+endif
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+SCXADMIN_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(SCXADMIN_STATICLIB_DEPS)))
+
+$(TARGET_DIR)/scxadmin$(PF_EXE_FILE_SUFFIX): \
+	$(SCXADMIN_OBJFILES) $(INTERMEDIATE_DIR)/libscxadmin.$(PF_STAT_LIB_FILE_SUFFIX) $(SCXADMIN_DEPFILES) $(SCXADMIN_STATICLIB_DEPFILES)
+	-$(MKPATH) $(TARGET_DIR)/tools
+	$(PROFILING) $(LINK) $(LINK_OUTFLAG) $(SCXADMIN_OBJFILES) $(SCXADMIN_STATICLIB_DEPFILES) $(LDFLAGS_SCX_ADMIN_TOOL) $(LDFLAGS_EXECUTABLE)
+
+#================================================================================
+# Logfile Reader Command Line Program
+#================================================================================
+
+LOGFILEREADER_DIR=$(SCX_SRC_ROOT)/providers/logfile_provider
+
+# Static lib files for scxlogfilereader command line program
+STATIC_LOGFILEREADER_SRCFILES = \
+	$(LOGFILEREADER_DIR)/logfileutils.cpp
+
+STATIC_LOGFILEREADER_OBJFILES = $(call src_to_obj,$(STATIC_LOGFILEREADER_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libscxlogfilereader.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_LOGFILEREADER_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+# The main program
+LOGFILEREADER_SRCFILES=\
+	$(LOGFILEREADER_DIR)/logfilereader.cpp 
+
+LOGFILEREADER_OBJFILES = $(call src_to_obj,$(LOGFILEREADER_SRCFILES))
+
+LOGFILEREADER_DEPFILES=$(LOGFILEREADER_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d) $(STATIC_LOGFILEREADER_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d) 
+
+# Static dependencies on POSIX platforms
+LOGFILEREADER_STATICLIB_DEPS = \
+	scxassertabort \
+	scxlogfilereader \
+	palsystem \
+	scxcore
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+LOGFILEREADER_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(LOGFILEREADER_STATICLIB_DEPS)))
+
+$(TARGET_DIR)/scxlogfilereader$(PF_EXE_FILE_SUFFIX): \
+	$(LOGFILEREADER_OBJFILES) $(INTERMEDIATE_DIR)/libscxlogfilereader.$(PF_STAT_LIB_FILE_SUFFIX) $(LOGFILEREADER_DEPFILES) $(LOGFILEREADER_STATICLIB_DEPFILES)
+	-$(MKPATH) $(TARGET_DIR)/tools
+	$(PROFILING) $(LINK) $(LINK_OUTFLAG) $(LOGFILEREADER_OBJFILES) $(LOGFILEREADER_STATICLIB_DEPFILES) $(LDFLAGS_SCX_ADMIN_TOOL) $(LDFLAGS_EXECUTABLE)
+
+#================================================================================
+# Regular Expression Test Tool
+#================================================================================
+
+REGEX_TEST_DIR=$(SCX_SRC_ROOT)/shared/tools/regex_test
+
+REGEX_TEST_SRCFILES=\
+	$(REGEX_TEST_DIR)/regex_test.cpp
+
+REGEX_TEST_OBJFILES = $(call src_to_obj,$(REGEX_TEST_SRCFILES))
+
+REGEX_TEST_DEPFILES=$(REGEX_TEST_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d)
+
+# Static dependencies on POSIX platforms
+REGEX_TEST_STATICLIB_DEPS = \
+	scxassertabort \
+	scxcore
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+REGEX_TEST_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(REGEX_TEST_STATICLIB_DEPS)))
+
+$(TARGET_DIR)/regex_test$(PF_EXE_FILE_SUFFIX): \
+	$(REGEX_TEST_OBJFILES) $(REGEX_TEST_DEPFILES) $(REGEX_TEST_STATICLIB_DEPFILES)
+	-$(MKPATH) $(TARGET_DIR)/tools
+	$(PROFILING) $(LINK) $(LINK_OUTFLAG) $(REGEX_TEST_OBJFILES) $(REGEX_TEST_STATICLIB_DEPFILES) $(LDFLAGS_EXECUTABLE)
+
+#================================================================================
+# Development Convenience Targets
+#================================================================================
+
+logfilereader-tool: $(TARGET_DIR)/scxlogfilereader$(PF_EXE_FILE_SUFFIX)
+admin-tool: $(TARGET_DIR)/scxadmin$(PF_EXE_FILE_SUFFIX)
+regex-test: $(TARGET_DIR)/regex_test$(PF_EXE_FILE_SUFFIX)
+ssl-tool: $(TARGET_DIR)/scxsslconfig$(PF_EXE_FILE_SUFFIX)
+
+# All SCX tools
+scx-tools: logfilereader-tool admin-tool regex-test ssl-tool
+
+coreprovider: \
+	$(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
+
+providers: \
+	$(TARGET_DIR)/libSCXTestProviderModule.$(PF_DYN_LIB_FILE_SUFFIX) \
+	$(TARGET_DIR)/libSCXCoreProviderModule.$(PF_DYN_LIB_FILE_SUFFIX)
+
+# An alias 
+pegasus: pegasus_all
+
+# All targets prefixed with pegasus_ are directed to the SCX Pegasus makefile 
+# wrapping the OpenPegasus makefiles. Explicitly pass along the variables needed.
+pegasus_%: 
+ifeq ($(BUILD_PEGASUS), true)
+	$(MAKE) -f Makefile.pegasus \
+		SCX_BRD=$(SCX_BRD) \
+		BUILD_CONFIGURATION=$(BUILD_CONFIGURATION) \
+		BUILD_TYPE=$(BUILD_TYPE) \
+		BUILD_PROFILING=$(BUILD_PROFILING) \
+		BUILD_PEGASUS_DEBUG=$(BUILD_PEGASUS_DEBUG) \
+		PF=$(PF) \
+		PF_DISTRO=$(PF_DISTRO) \
+		PF_MAJOR=$(PF_MAJOR) \
+		PF_MINOR=$(PF_MINOR) \
+		ARCH=$(ARCH) \
+		SCX_STACK_ONLY=$(SCX_STACK_ONLY) \
+		$@
+else
+	@echo "Skipping build of Pegasus due to configuration BUILD_PEGASUS=false"
+endif
+
+get_platform_string:
+	@$(call pf_fwrite,"$(BUILD_CONFIGURATION)", $(SCX_BRD)/build/platform_string.txt)
+
+
+#================================================================================
+# Doxygen Targets
+#================================================================================
+
+# Build the Doxygen documentation for the SCXCore lib
+doxygen_corelib:
+	-$(RMDIR) $(DOXYGEN_OUTPUT_DIR)/scxcore_doc
+	$(MKPATH) $(DOXYGEN_OUTPUT_DIR)/scxcore_doc
+	( cat doxygen_scxcore.cfg ; \
+	  echo "STRIP_FROM_PATH=$(SCX_SRC_ROOT)"; \
+	  echo "OUTPUT_DIRECTORY=$(DOXYGEN_OUTPUT_DIR)/scxcore_doc"; \
+	  echo "WARN_LOGFILE=$(TARGET_DIR)/doxygen_build.log"; ) | doxygen -
+	if [ -s $(TARGET_DIR)/doxygen_build.log ] ; then echo "$(TARGET_DIR)/doxygen_build.log:1:Warnings in doxygenlog"; fi
+
+doxygen_clean:
+	-$(RMDIR) $(DOXYGEN_OUTPUT_DIR)/scxcore_doc
+
+#================================================================================
+# Dependency generation Targets
+#================================================================================
+
+# Rule for automatically generating dependencies.
+OBJFILES=$(STATIC_CORELIB_OBJFILES) \
+	$(STATIC_ASSERT_ABORTLIB_OBJFILES) \
+	$(STATIC_METAPROVIDERLIB_OBJFILES) \
+	$(STATIC_LOGPOLICYLIB_OBJFILES) \
+	$(STATIC_TESTPROVIDERLIB_OBJFILES) \
+	$(STATIC_PROVSUPLIB_OBJFILES) \
+	$(STATIC_SYSTEMPALLIB_OBJFILES) \
+	$(STATIC_SCXADMIN_OBJFILES) \
+	$(SCXADMIN_OBJFILES) \
+	$(SCXSSLCONFIG_OBJFILES) \
+	$(REGEX_TEST_OBJFILES)
+
+ifneq ($(SCX_STACK_ONLY), true)      # For a full agent, also include these:
+OBJFILES=$(STATIC_CORELIB_OBJFILES) \
+	$(STATIC_ASPROVIDERLIB_OBJFILES) \
+	$(STATIC_NETWORKPROVIDERLIB_OBJFILES) \
+	$(STATIC_CPUPROVIDERLIB_OBJFILES) \
+	$(STATIC_MEMORYPROVIDERLIB_OBJFILES) \
+	$(STATIC_OSPROVIDERLIB_OBJFILES) \
+	$(STATIC_DISKPROVIDERLIB_OBJFILES) \
+	$(STATIC_PROCESSPROVIDERLIB_OBJFILES) \
+	$(STATIC_RUNASPROVIDERLIB_OBJFILES) \
+	$(STATIC_LOGFILEPROVIDERLIB_OBJFILES) \
+
+endif
+
+DEPFILES=$(OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d)
+
+#================================================================================
+# Version information header file
+#================================================================================
+
+ $(INT_INCLUDE_DIR)/buildversion.h : $(SCX_BRD)/build/Makefile.version
+	-$(MKPATH) $(@D)
+	@$(ECHO) "Creating $@" 
+	@$(call pf_fwrite,"/*------------------------------------------------------------------------------",  $@)
+	@$(call pf_fappend,"    Copyright (C) 2007 Microsoft Corp.                                          ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"*/                                                                              ", $@)
+	@$(call pf_fappend,"/**                                                                             ", $@)
+	@$(call pf_fappend,"    \file                                                                       ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"    \brief       Auto generated file containing build version information       ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"    \author      Automated Build System                                         ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"    DO NOT EDIT THIS FILE!                                                      ", $@)
+	@$(call pf_fappend,"    DO NOT CHECK IN THIS FILE!                                                  ", $@)
+	@$(call pf_fappend,"*/                                                                              ", $@)
+	@$(call pf_fappend,"/*----------------------------------------------------------------------------*/", $@)
+	@$(call pf_fappend,"#ifndef BUILDVERSION_H                                                          ", $@)
+	@$(call pf_fappend,"#define BUILDVERSION_H                                                          ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"#include <string>                                                               ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"/** Major version number */                                                     ", $@)
+	@$(call pf_fappend,"const int SCX_BUILDVERSION_MAJOR   = $(SCX_BUILDVERSION_MAJOR);                 ", $@)
+	@$(call pf_fappend,"/** Minor version number */                                                     ", $@)
+	@$(call pf_fappend,"const int SCX_BUILDVERSION_MINOR   = $(SCX_BUILDVERSION_MINOR);                 ", $@)
+	@$(call pf_fappend,"/** Patch version number */                                                     ", $@)
+	@$(call pf_fappend,"const int SCX_BUILDVERSION_PATCH   = $(SCX_BUILDVERSION_PATCH);                 ", $@)
+	@$(call pf_fappend,"/** Build number */                                                             ", $@)
+	@$(call pf_fappend,"const int SCX_BUILDVERSION_BUILDNR = $(SCX_BUILDVERSION_BUILDNR);               ", $@)
+	@$(call pf_fappend,"/** Build date */                                                               ", $@)
+	@$(call pf_fappend,"const std::wstring SCX_BUILDVERSION_DATE(L\"$(SCX_BUILDVERSION_DATE)\");        ", $@)
+	@$(call pf_fappend,"/** Build status */                                                             ", $@)
+	@$(call pf_fappend,"const std::wstring SCX_BUILDVERSION_STATUS(L\"$(SCX_BUILDVERSION_STATUS)\");    ", $@)
+	@$(call pf_fappend,"                                                                                ", $@)
+	@$(call pf_fappend,"#endif /* BUILDVERSION_H */                                                     ", $@)
+	@$(call pf_fappend,"/*----------------------------E-N-D---O-F---F-I-L-E---------------------------*/", $@)
+
+
+#-------------------------------- End of File -----------------------------------

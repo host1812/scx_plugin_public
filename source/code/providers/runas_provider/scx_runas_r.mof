@@ -1,0 +1,23 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXUserCoreProviderModule";
+   Name = "SCX_RunAsProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXUserCoreProviderModule";
+   ProviderName = "SCX_RunAsProvider";
+   CapabilityID = "7";
+   ClassName = "SCX_OperatingSystem";
+   Namespaces = {"root/scx"};
+   ProviderType = { 5 }; // Method
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+
+

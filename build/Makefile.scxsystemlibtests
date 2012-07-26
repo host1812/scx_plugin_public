@@ -1,0 +1,50 @@
+# -*- mode: Makefile; -*-
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 
+# Definition of all shared unit tests for SCXSystemLib
+#
+#--------------------------------------------------------------------------------
+
+SYSTEMLIB_UNITTEST_ROOT=$(SCX_UNITTEST_ROOT)/shared/scxsystemlib
+
+POSIX_UNITTESTS_SYSTEM_SRCFILES = \
+	$(SYSTEMLIB_UNITTEST_ROOT)/common/scxkstat_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/common/entityinstance_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/common/scxostypeinfo_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/common/scxsysteminfo_test.cpp \
+
+# For a full build, also include these
+ifneq ($(SCX_STACK_ONLY),true)
+POSIX_UNITTESTS_SYSTEM_SRCFILES += \
+	$(SYSTEMLIB_UNITTEST_ROOT)/networkinterface/networkinterface_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/cpu/cpuenumeration_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/datasampler_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/memory/memoryenumeration_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/diskrights_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/raidpal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/lvmtab_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/statisticalphysicaldiskpal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/staticphysicaldiskpal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/staticlogicaldiskpal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/disk/diskpal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/memory/memoryinstance_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/os/ospal_test.cpp \
+	$(SYSTEMLIB_UNITTEST_ROOT)/process/processpal_test.cpp \
+
+endif
+
+ifeq ($(PF),Linux)
+	POSIX_UNITTESTS_SRCFILES += $(SCX_UNITTEST_ROOT)/common_lib/pal/system/disk/scxlvmutils_test.cpp
+endif
+
+# Extra include dirs for certain include files
+
+ifneq ($(SCX_STACK_ONLY), true)
+$(INTERMEDIATE_DIR)/test/code/shared/scxsystemlib/networkinterface/networkinterface_test.d: INCLUDES += -I$(SCX_SRC_ROOT)/shared/scxsystemlib/networkinterface
+$(INTERMEDIATE_DIR)/test/code/shared/scxsystemlib/networkinterface/networkinterface_test.$(PF_OBJ_FILE_SUFFIX): INCLUDES += -I$(SCX_SRC_ROOT)/shared/scxsystemlib/networkinterface
+
+endif
+
+#-------------------------------- End of File -----------------------------------

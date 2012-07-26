@@ -1,0 +1,22 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   Name = "SCX_MemoryProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_MemoryProvider";
+   CapabilityID = "SCX_MemoryStatisticalInformation";
+   ClassName = "SCX_MemoryStatisticalInformation";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2, 5 }; // Instance, Method
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};
+

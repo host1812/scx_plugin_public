@@ -1,0 +1,351 @@
+# -*- mode: Makefile; -*-
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved. 
+# 2008-01-10
+#--------------------------------------------------------------------------------
+
+# This makefile is called from the main Makefile structure. Certain variables
+# are explicitly supplied in the call. 
+# Since this Makefile sets up a number of environment variables it is called
+# explicitly rather than simply #included. 
+
+#--------------------------------------------------------------------------------
+# Solaris settings
+ifeq ($(PF), SunOS)
+	export PEGASUS_PLATFORM=SOLARIS_SPARC_CC
+	export LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/lib:/usr/sfw/lib
+ifeq ($(PF_MAJOR), 5)
+ifeq ($(PF_MINOR), 8)
+	export LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/ssl/lib
+endif
+ifeq ($(PF_MINOR), 9)
+	export LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/ssl/lib
+endif
+endif
+endif
+
+#--------------------------------------------------------------------------------
+# Linux settings
+ifeq ($(PF), Linux)
+	ifeq ($(ARCH), x64)
+		export PEGASUS_PLATFORM=LINUX_X86_64_GNU
+	else
+		export PEGASUS_PLATFORM=LINUX_IX86_GNU
+	endif
+	export PEGASUS_EXTRA_CXX_FLAGS= -fstack-protector-all
+	export PEGASUS_EXTRA_PROGRAM_LINK_FLAGS=-pie
+
+	# -fstack-protector-all not supported on Sles 9 - remove
+	ifeq ($(PF_DISTRO),SUSE)
+		ifeq ($(PF_MAJOR),9)
+			PEGASUS_EXTRA_CXX_FLAGS := $(PEGASUS_EXTRA_CXX_FLAGS:-fstack-protector-all=)
+		endif
+	endif
+
+	# -fstack-protector-all not supported on RH4 - remove
+	ifeq ($(PF_DISTRO),REDHAT)
+		ifeq ($(PF_MAJOR),4)
+			PEGASUS_EXTRA_CXX_FLAGS := $(PEGASUS_EXTRA_CXX_FLAGS:-fstack-protector-all=)
+		endif
+	endif
+
+	# -fstack-protector-all not supported on Ubuntu 6 - remove
+	ifeq ($(PF_DISTRO),UBUNTU)
+		ifeq ($(PF_MAJOR),6)
+			PEGASUS_EXTRA_CXX_FLAGS := $(PEGASUS_EXTRA_CXX_FLAGS:-fstack-protector-all=)
+		endif
+	endif
+endif 
+
+#--------------------------------------------------------------------------------
+# HPUX settings
+ifeq ($(PF), HPUX)
+	ifeq ($(ARCH), hppa)
+		export PEGASUS_PLATFORM=HPUX_PARISC_ACC
+	else
+		export PEGASUS_PLATFORM=HPUX_IA64_ACC
+		export PEGASUS_EXTRA_CXX_FLAGS = +check=stack
+		export PEGASUS_EXTRA_PROGRAM_LINK_FLAGS = +check=stack
+		export PEGASUS_EXTRA_LIBRARY_LINK_FLAGS = +check=stack
+	endif
+	export HPUX_IA64_NATIVE_COMPILER=yes
+
+	# UNIX_STD=2003 affects the behaviour of certain C-lib functions. Together
+	# with the compilation flag -D_XOPEN_SOURCE=600 it signals that the source
+	# code follows the UNIX03 convenions. We use that for core and OpenWSMan
+	# on HP, but we don't quite know where that would lead to if we would
+	# make those claims for Pegasus also. So we disable that.
+	export UNIX_STD=''
+endif
+
+#--------------------------------------------------------------------------------
+# AIX settings
+ifeq ($(PF), AIX)
+	export PEGASUS_PLATFORM=AIX_RS_IBMCXX
+	export PEGASUS_EXTRA_CXX_FLAGS=-qextchk
+	export PEGASUS_EXTRA_PROGRAM_LINK_FLAGS= -qextchk
+ifeq ($(BUILD_PEGASUS_DEBUG), true)
+	PEGASUS_EXTRA_CXX_FLAGS += -qcheck 
+	PEGASUS_EXTRA_PROGRAM_LINK_FLAGS += -qcheck 
+#	PEGASUS_EXTRA_CXX_FLAGS += -qheapdebug    Disabled, see WI 11161
+#	PEGASUS_EXTRA_PROGRAM_LINK_FLAGS += -qheapdebug
+endif
+endif
+
+#--------------------------------------------------------------------------------
+# MacOS Settings
+ifeq ($(PF), MacOS)
+	export PEGASUS_PLATFORM=DARWIN_IX86_GNU
+endif
+
+#--------------------------------------------------------------------------------
+# MOF Settings (for pruned repository)
+
+PEGASUS_SCX_MOF=${SCX_BRD}/source/code/mof/scx.mof
+PEGASUS_SCX_PRUNE_MOF=${PEGASUS_SCX_MOF} ${SCX_BRD}/source/code/mof/scx-agent.mof
+
+ifeq ($(SCX_STACK_ONLY), true)
+	PEGASUS_SCX_MOF=${SCX_BRD}/source/code/mof/scx-agent.mof
+	PEGASUS_SCX_PRUNE_MOF=${PEGASUS_SCX_MOF}
+endif
+
+#--------------------------------------------------------------------------------
+# Common
+
+# The += notation gives extra space -> using explicit setting everywhere
+
+export PEGASUS_HOME=${SCX_BRD}/intermediate/${BUILD_CONFIGURATION}/pegasus
+export PEGASUS_ROOT=${SCX_BRD}/source/ext/common/pegasus
+export PATH:=$(PATH):${PEGASUS_HOME}/bin
+export LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):${PEGASUS_HOME}/lib
+ifeq ($(PF), HPUX)
+	ifeq ($(ARCH), hppa)
+		export SHLIB_PATH:=$(SHLIB_PATH):${PEGASUS_HOME}/lib
+	endif
+endif
+
+#--------------------------------------------------------------------------------
+# Support for BullseyeCoverage from Bullseye Testing Technology 
+# Note: this is also done in the Makefile.tests
+ifeq ($(BUILD_TYPE),Bullseye)
+	COVFILE=${SCX_BRD}/intermediate/${BUILD_CONFIGURATION}/OpsMgr.cov
+	PROFILING=COVFILE=${COVFILE} covc --retain
+	export COVFILE
+else
+	COVFILE=
+	PROFILING=
+	export COVFILE
+endif
+
+
+# Compiler for mof files, offline variant
+CIMMOFCLI=$(PEGASUS_HOME)/bin/cimmofl
+
+# Command for removing old repository
+RMREPOSITORY=rm -rf 
+
+#--------------------------------------------------------------------------------
+# Pegasus config variables affecting Pegasus options
+
+export PEGASUS_DEFAULT_ENABLE_OOP=true
+export PEGASUS_DISABLE_DEPRECATED_INTERFACES=true
+export PEGASUS_DISABLE_INSTANCE_QUALIFIERS=true
+# Separate WI: export PEGASUS_DISABLE_PERFINST=true
+export PEGASUS_EMBEDDED_INSTANCE_SUPPORT=false
+export PEGASUS_ENABLE_AUDIT_LOGGER=false
+export PEGASUS_ENABLE_CMPI_PROVIDER_MANAGER=true
+export PEGASUS_ENABLE_EXECQUERY=true # Enable WQL/CQL
+
+# Pegasus CIM Schema is used only for root/PG_InterOp and root/PG_Internal namespaces, not root/scx
+export PEGASUS_CIM_SCHEMA=CIM2131
+
+export PEGASUS_EMBEDDED_INSTANCE_SUPPORT=true
+export PEGASUS_ENABLE_IPV6=true
+export PEGASUS_ENABLE_MAKE_INSTALL=true
+export PEGASUS_USE_RELEASE_DIRS=true
+export PEGASUS_OVERRIDE_DEFAULT_RELEASE_DIRS=true
+export PEGASUS_OVERRIDE_PRODUCT_ID=true
+export PEGASUS_PRODUCT_NAME="SCX CIM Server"
+export PEGASUS_PRODUCT_STATUS="Release"
+export PEGASUS_PRODUCT_VERSION="2.9.0"
+export PEGASUS_PAM_AUTHENTICATION=true
+export PEGASUS_PAM_SERVICE_NAME=scx
+# WI 3045 export PEGASUS_REPOSITORY_MODE=BIN
+export PEGASUS_USE_MU_DEPEND=true
+export PEGASUS_USE_PAM_STANDALONE_PROC=true
+# WI 3042 export PEGASUS_ENABLE_PRIVILEGE_SEPARATION=true
+export PEGASUS_HAS_SSL=true
+ifeq ($(BUILD_PEGASUS_DEBUG), true)
+	export PEGASUS_DEBUG=true
+else
+	export PEGASUS_NOASSERTS=true
+	export PEGASUS_USE_RELEASE_CONFIG_OPTIONS=true
+endif
+
+## Directory locations
+export PEGASUS_VARRUN_DIR=/var/opt/microsoft/scx/tmp
+export PEGASUS_CIMSERVER_START_FILE=$(PEGASUS_VARRUN_DIR)/scx-cimd.pid
+export PEGASUS_CIMSERVER_START_LOCK_FILE=$(PEGASUS_VARRUN_DIR)/cimserver_start.lock
+export PEGASUS_LOCAL_DOMAIN_SOCKET_PATH=$(PEGASUS_VARRUN_DIR)/cim.socket
+
+ifeq ($(PF), MacOS)
+	export PEGASUS_PROD_DIR=/usr/libexec/microsoft/scx
+else
+	export PEGASUS_PROD_DIR=/opt/microsoft/scx
+endif
+
+export PEGASUS_SBIN_DIR=$(PEGASUS_PROD_DIR)/bin
+export PEGASUS_BIN_DIR=$(PEGASUS_PROD_DIR)/bin
+export PEGASUS_DEST_LIB_DIR=$(PEGASUS_PROD_DIR)/lib
+export PEGASUS_PROVIDER_DIR=$(PEGASUS_PROD_DIR)/lib
+export PEGASUS_PROVIDER_LIB_DIR=$(PEGASUS_PROVIDER_DIR)/providers:$(PEGASUS_PROVIDER_DIR)/providers/ext
+export PEGASUS_VARDATA_DIR=/var/opt/microsoft/scx
+export PEGASUS_REPOSITORY_PARENT_DIR=$(PEGASUS_VARDATA_DIR)/lib
+export PEGASUS_REPOSITORY_DIR_NAME=repository
+export PEGASUS_REPOSITORY_DIR=$(PEGASUS_REPOSITORY_PARENT_DIR)/$(PEGASUS_REPOSITORY_DIR_NAME)
+export PEGASUS_PREV_REPOSITORY_DIR_NAME=prev_repository
+export PEGASUS_PREV_REPOSITORY_DIR=$(PEGASUS_REPOSITORY_PARENT_DIR)/$(PEGASUS_PREV_REPOSITORY_DIR_NAME)
+export PEGASUS_VARDATA_CACHE_DIR=$(PEGASUS_VARDATA_DIR)/tmp
+export PEGASUS_LOCAL_AUTH_DIR=$(PEGASUS_VARDATA_CACHE_DIR)/localauth
+export PEGASUS_TRACE_DIR=$(PEGASUS_VARDATA_DIR)/log
+export PEGASUS_TRACE_FILE_PATH=$(PEGASUS_TRACE_DIR)/cimserver.trc
+export PEGASUS_PLANNED_CONFIG_FILE=cimserver_planned.conf
+export PEGASUS_PLANNED_CONFIG_FILE_PATH=/etc/opt/microsoft/scx/conf/$(PEGASUS_PLANNED_CONFIG_FILE)
+export PEGASUS_CURRENT_CONFIG_FILE=cimserver_current.conf
+export PEGASUS_CURRENT_CONFIG_FILE_PATH=/etc/opt/microsoft/scx/conf/$(PEGASUS_CURRENT_CONFIG_FILE)
+export PEGASUS_LOG_DIR=$(PEGASUS_VARDATA_DIR)/log
+export PEGASUS_INSTALL_LOG=$(PEGASUS_LOG_DIR)/install.log
+export PEGASUS_PROVIDER_AGENT_PROC_NAME=$(PEGASUS_SBIN_DIR)/scxcimprovagt
+export PEGASUS_SERVER_PROCESS_NAME=scxcimserver
+export PEGASUS_PAM_STANDALONE_PROC_NAME=$(PEGASUS_SBIN_DIR)/scxcimservera
+
+# 2.9 support; wi10680
+export PEGASUS_ENABLE_CQL=false
+export PEGASUS_BUILD_SCX=true
+export PEGASUS_PAM_SERVICE_NAME=scx
+export PEGASUS_CIMMOF_PROGRAM_NAME=scxcimmofl
+export PEGASUS_CIMMOFL_PROGRAM_NAME=scxcimmofl
+export PEGASUS_ENABLE_PROTOCOL_WSMAN=true
+export PEGASUS_WSM_RESOURCEURI_CIMSCHEMAV2_PREFIX=http://schemas.microsoft.com
+export PEGASUS_HAS_SSL=true
+# Disable building of Pegasus test programs.
+export PEGASUS_SKIP_MOST_TEST_DIRS=true
+
+
+-include $(SCX_BRD)/build/Makefile.version
+
+## ProductVersion returned by wsman identify operation.
+export PEGASUS_WSMAN_PRODUCT_VERSION="$(SCX_BUILDVERSION_MAJOR).$(SCX_BUILDVERSION_MINOR).$(SCX_BUILDVERSION_PATCH)-$(SCX_BUILDVERSION_BUILDNR)"
+
+## ProductVendor returned by wsman identify operation.
+export PEGASUS_WSMAN_PRODUCT_VENDOR="Microsoft System Center Cross Platform"
+
+# Support Purify/Quantify if we're using it
+#
+# Note that purify and quantify doesn't support shared libraries directly;
+# you must instrument the main program.  In our case, Pegasus launches
+# cimprovagt which dynamically loads our provider library.  So we instrument
+# that.
+ifeq ($(BUILD_PROFILING), purify)
+	export PEGASUS_PURIFY_CIMPROVAGT=true
+endif
+ifeq ($(BUILD_PROFILING), quantify)
+	export PEGASUS_QUANTIFY_CIMPROVAGT=true
+endif
+
+# SCX namespace repository details 
+SCX_NAMESPACE=root/scx
+SCX_NAMESPACE_DIR=root\#scx
+
+# The CIM schema to use for root/scx
+SCX_CIM_SCHEMA_DIR=$(SCX_BRD)/source/ext/common/dmtf/cimv2171
+SCX_CIM_SCHEMA_VER=217
+SCX_CIM_SCHEMA_FILENAME=cimv$(SCX_CIM_SCHEMA_VER).mof
+
+
+#--------------------------------------------------------------------------------
+# Targets
+
+# All: Distribution plus SCX repository and SCX schema classes
+pegasus_all: pegasus_distro pegasus_scx_repository
+
+# All from distribution 
+pegasus_distro: pegasus_setup_dependencies pegasus_build_binaries pegasus_rebuild_distro_repository
+
+pegasus_c_ProdFile:
+	sh $(SCX_BRD)/build/pegasus_helper.sh $(PEGASUS_ROOT) ProductVersionFile
+
+pegasus_c_CommonDirStruct:
+	sh $(SCX_BRD)/build/pegasus_helper.sh $(PEGASUS_ROOT) ProductDirInclude
+
+pegasus_c_ConfigDirStruct:
+	sh $(SCX_BRD)/build/pegasus_helper.sh $(PEGASUS_ROOT) ConfigDirInclude
+
+pegasus_buildmu:
+	$(MAKE) -C $(PEGASUS_ROOT) -f Makefile.Release buildmu
+
+pegasus_scxcimprovagt:
+	$(MAKE) -C $(PEGASUS_ROOT) -f Makefile.Release scxcimprovagt
+
+pegasus_setup_dependencies: pegasus_buildmu pegasus_c_ProdFile pegasus_c_CommonDirStruct pegasus_c_ConfigDirStruct
+	$(MAKE)	-C $(PEGASUS_ROOT) -f Makefile.Release depend
+
+# Bypasses all dependency generation for when no files have been added/removed
+
+pegasus_build_binaries: pegasus_cache
+	$(MAKE)	-C $(PEGASUS_ROOT) -f Makefile.Release all  
+
+# (re)build both Pegasus and SCX repositories. 
+# Useful for developers, not called via pegasus_all
+pegasus_rebuild_repos: pegasus_rebuild_distro_repository pegasus_scx_repository
+
+# (re)build the base repository 
+pegasus_rebuild_distro_repository:
+	$(MAKE)	-C $(PEGASUS_ROOT) -f Makefile.Release repository
+
+# Clean all (binaries and repo)
+pegasus_clean: pegasus_scx_repository_clean
+	rm -f $(PEGASUS_ROOT)/src/Pegasus/Common/ProductVersion.h
+	rm -f $(PEGASUS_ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
+	rm -f $(PEGASUS_ROOT)/src/Pegasus/Config/ProductDirectoryStructure.h
+	rm -f $(PEGASUS_HOME)/bin/mu
+	$(MAKE) --directory=$(PEGASUS_ROOT)/src/utils/mu -f Makefile clean
+	$(MAKE) -C $(PEGASUS_ROOT) -f Makefile.Release clean
+
+# (re)build the SCX namespace with CIM classes, the SCX classes in that namespace, register providers
+# NB: Developers shouldn't make this target directly, but instead use pegasus_rebuild_repos.
+pegasus_scx_repository: pegasus_scx_pruned_repository ${SCX_BRD}/source/code/mof/scx.mof ${SCX_BRD}/source/code/mof/scx-agent.mof ${SCX_BRD}/source/code/providers/scx_core_r.mof
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MBIN -n $(SCX_NAMESPACE) $(PEGASUS_SCX_MOF)
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MXML -n root/PG_InterOp ${SCX_BRD}/source/code/providers/scx_core_r.mof
+
+pegasus_scx_pruned_repository: pegasus_scx_repository_clean $(PEGASUS_HOME)/prunedreopsitory.mof pegasus_scx_repository_qualifiers
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MBIN -I$(SCX_CIM_SCHEMA_DIR) -n $(SCX_NAMESPACE) $(PEGASUS_HOME)/prunedreopsitory.mof
+
+$(PEGASUS_HOME)/prunedreopsitory.mof:
+	cd ${SCX_BRD}/source/code/shared/tools/scx_prune_repository; \
+		python main.py \
+			--cim_schema_dir="$(SCX_CIM_SCHEMA_DIR)" \
+			$(PEGASUS_SCX_PRUNE_MOF) > $@
+
+pegasus_scx_repository_qualifiers: 
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MBIN -I$(SCX_CIM_SCHEMA_DIR) -n $(SCX_NAMESPACE) $(SCX_CIM_SCHEMA_DIR)/qualifiers.mof
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MBIN -I$(SCX_CIM_SCHEMA_DIR) -n $(SCX_NAMESPACE) $(SCX_CIM_SCHEMA_DIR)/qualifiers_optional.mof
+
+pegasus_test_prune_repository:
+	cd ${SCX_BRD}/test/code/shared/tools/scx_prune_repository;python testrunner.py
+
+pegasus_register_testprovider:
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MXML -n $(SCX_NAMESPACE) $(SCX_BRD)/source/code/provsup_lib/testprovider/scx_test.mof
+	$(CIMMOFCLI) -W -R $(PEGASUS_HOME) -MXML -nroot/PG_InterOp $(SCX_BRD)/source/code/provsup_lib/testprovider/scx_test_r.mof
+
+# Clean the SCX namespace repo
+pegasus_scx_repository_clean: 
+	$(RMREPOSITORY) $(PEGASUS_HOME)/repository/$(SCX_NAMESPACE_DIR)
+	rm -f $(PEGASUS_HOME)/prunedreopsitory.mof
+
+pegasus_cache:
+	@ ( env | grep "^PEGASUS" | sed 's/.*/export &/g' > $(PEGASUS_ROOT)/cache.mak )
+	@ echo "Created $(PEGASUS_ROOT)/cache.mak"
+	@ echo "PATH=$(PATH)" >> $(PEGASUS_ROOT)/cache.mak
+	@ echo "LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)" >> $(PEGASUS_ROOT)/cache.mak
+	@ echo "COVFILE=$(COVFILE)" >> $(PEGASUS_ROOT)/cache.mak

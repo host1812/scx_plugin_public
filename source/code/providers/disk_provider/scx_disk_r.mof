@@ -1,0 +1,57 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   Name = "SCX_DiskProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_DiskProvider";
+   CapabilityID = "SCX_DiskDrive";
+   ClassName = "SCX_DiskDrive";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2,5 }; // Instance, Method
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_DiskProvider";
+   CapabilityID = "SCX_FileSystem";
+   ClassName = "SCX_FileSystem";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2,5 }; // Instance, Method
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_DiskProvider";
+   CapabilityID = "SCX_DiskDriveStatisticalInformation";
+   ClassName = "SCX_DiskDriveStatisticalInformation";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2 }; // Instance
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_DiskProvider";
+   CapabilityID = "SCX_FileSystemStatisticalInformation";
+   ClassName = "SCX_FileSystemStatisticalInformation";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2 }; // Instance
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};

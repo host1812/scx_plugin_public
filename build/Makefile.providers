@@ -1,0 +1,136 @@
+# -*- mode: Makefile; -*- 
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+#--------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------
+# Network Provider
+
+STATIC_NETWORKPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/network_provider/networkprovider.cpp
+
+STATIC_NETWORKPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_NETWORKPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libnetworkprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_NETWORKPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+#--------------------------------------------------------------------------------
+# CPU Provider
+
+STATIC_CPUPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/cpu_provider/cpuprovider.cpp
+
+STATIC_CPUPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_CPUPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libcpuprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_CPUPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# Memory Provider
+
+STATIC_MEMORYPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/memory_provider/memoryprovider.cpp
+
+STATIC_MEMORYPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_MEMORYPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libmemoryprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_MEMORYPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# OS Provider
+
+STATIC_OSPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/os_provider/osprovider.cpp
+
+STATIC_OSPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_OSPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libosprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_OSPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# Disk Provider
+
+STATIC_DISKPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/disk_provider/diskprovider.cpp
+
+STATIC_DISKPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_DISKPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libdiskprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_DISKPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+#--------------------------------------------------------------------------------
+# Process Provider
+
+STATIC_PROCESSPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/process_provider/processprovider.cpp
+
+STATIC_PROCESSPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_PROCESSPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libprocessprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_PROCESSPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# RunAs Provider
+
+STATIC_RUNASPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/runas_provider/scxrunasconfigurator.cpp \
+	$(SCX_SRC_ROOT)/providers/runas_provider/runasprovider.cpp
+
+STATIC_RUNASPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_RUNASPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/librunasprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_RUNASPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# LogFile Provider
+
+STATIC_LOGFILEPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/logfile_provider/logfileprovider.cpp \
+	$(SCX_SRC_ROOT)/providers/logfile_provider/logfileutils.cpp
+
+STATIC_LOGFILEPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_LOGFILEPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/liblogfileprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_LOGFILEPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# Meta Provider
+
+STATIC_METAPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/meta_provider/metaprovider.cpp
+
+STATIC_METAPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_METAPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libmetaprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_METAPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+#--------------------------------------------------------------------------------
+# AS Provider
+
+STATIC_ASPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/appserverprovider.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/appserverenumeration.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/appserverinstance.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/jbossappserverinstance.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/tomcatappserverinstance.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/weblogicappserverinstance.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/weblogicappserverenumeration.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/websphereappserverinstance.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/manipulateappserverinstances.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/persistappserverinstances.cpp \
+	$(SCX_SRC_ROOT)/providers/appserver_provider/removenonexistentappserverinstances.cpp
+
+STATIC_ASPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_ASPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libasprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_ASPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+#-------------------------------- End of File -----------------------------------

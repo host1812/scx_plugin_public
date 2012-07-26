@@ -1,0 +1,46 @@
+# -*- mode: Makefile; -*- 
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+
+#================================================================================
+# Static Libraries
+#================================================================================
+
+#================================================================================
+# Installation Tools
+#================================================================================
+
+SCXSSLCONFIG_DIR=$(SCX_SRC_ROOT)/shared/tools/scx_ssl_config
+
+# Static lib files for ssl tool
+STATIC_SCXSSLCONFIG_SRCFILES = \
+	$(SCXSSLCONFIG_DIR)/scxsslcert.cpp
+
+STATIC_SCXSSLCONFIG_OBJFILES = $(call src_to_obj,$(STATIC_SCXSSLCONFIG_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libscxsslconfig.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_SCXSSLCONFIG_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+SCXSSLCONFIG_SRCFILES=\
+	$(SCXSSLCONFIG_DIR)/scx_ssl_config.cpp
+
+SCXSSLCONFIG_OBJFILES = $(call src_to_obj,$(SCXSSLCONFIG_SRCFILES))
+
+SCXSSLCONFIG_DEPFILES=$(SCXSSLCONFIG_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d) $(STATIC_SCXSSLCONFIG_OBJFILES:.$(PF_OBJ_FILE_SUFFIX)=.d)
+
+# Static dependencies on POSIX platforms
+SCXSSLCONFIG_STATICLIB_DEPS = \
+	scxassertabort \
+	scxsslconfig \
+	scxcore
+
+# Foreach XYZ in the list above, build $(INTERMEDIATE_DIR)/libXYZ.a
+SCXSSLCONFIG_STATICLIB_DEPFILES = $(addprefix $(INTERMEDIATE_DIR)/lib, $(addsuffix .$(PF_STAT_LIB_FILE_SUFFIX), $(SCXSSLCONFIG_STATICLIB_DEPS)))
+
+$(TARGET_DIR)/scxsslconfig$(PF_EXE_FILE_SUFFIX): \
+	$(SCXSSLCONFIG_OBJFILES) $(INTERMEDIATE_DIR)/libscxsslconfig.$(PF_STAT_LIB_FILE_SUFFIX) $(SCXSSLCONFIG_DEPFILES) $(SCXSSLCONFIG_STATICLIB_DEPFILES)
+	-$(MKPATH) $(TARGET_DIR)/tools
+	$(PROFILING) $(LINK) $(LINK_OUTFLAG) $(SCXSSLCONFIG_OBJFILES) $(SCXSSLCONFIG_STATICLIB_DEPFILES) $(SSL_LIBS) $(LDFLAGS_EXECUTABLE)
+
+

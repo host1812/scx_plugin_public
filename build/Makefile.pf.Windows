@@ -1,0 +1,94 @@
+# -*- mode: Makefile; -*-
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+#
+# Settings for windows platforms. Each can be overridden in a platform-
+# specific file (Makefile.pf.<platform>, leaving this file to contain defaults.
+#
+#--------------------------------------------------------------------------------
+
+# Define flags. (These will be submitted to all commands that use the preprocesor)
+DEFINES=/D "WIN32" /D "_UNICODE" /D "UNICODE" /D "DISABLE_WIN_UNSUPPORTED"
+
+# Compiler flags that regulates warning levels
+CXX_WARN_FLAGS=/W3
+
+# CXX Compiler flags 
+CXXFLAGS=/Od /FD /EHa /MDd /WX /nologo /c /TP /errorReport:prompt $(DEFINES) $(CXX_WARN_FLAGS)
+
+# CXX Debug flags for debug builds
+ifeq ($(BUILD_TYPE),Debug)
+	DEFINES += /D "_DEBUG"
+endif 
+
+# Linker flags
+LINK_OUTFLAG=/OUT:"$@"
+LINK_STATLIB_OUTFLAG=/OUT:"$@"
+
+#--------------------------------------------------------------------------------
+# Tools for this platform
+
+# Compiler for CPP files
+CXX=cl
+
+# Link command for executables
+# Link an executable 
+LINK=link.exe /INCREMENTAL:no /PROFILE /NOLOGO /MANIFEST /MANIFESTFILE:"$@.manifest" /DEBUG /ASSEMBLYDEBUG /PDB:"$(@D)\testrunner.pdb" /MACHINE:X86 /FIXED:No /ERRORREPORT:PROMPT /LIBPATH:"$(CPPUNIT_LIB_PATH)"
+
+# Link command for static libraries (archives)
+LINK_STATLIB=lib.exe /NOLOGO
+
+# OpenPegasus MOF file compiler
+CIMMOF=cimmof
+
+# Include paths for windows platforms
+INCLUDES=-I$(call pf_tp,$(SCX_SHARED_INCLUDE_DIR)) -I$(call pf_tp,$(SCX_INCLUDE_DIR)) -I$(call pf_tp,$(INT_INCLUDE_DIR)) -I$(call pf_tp,$(EXT_INCLUDE_DIR)) -I$(call pf_tp,$(TST_EXT_INCLUDE_DIR))
+UNITTEST_EXTRA_INCLUDES=-I$(call pf_tp,$(SCX_UNITTEST_ROOT)/shared/include)
+
+#--------------------------------------------------------------------------------
+# File type suffixes
+
+PF_OBJ_FILE_SUFFIX=obj
+PF_STAT_LIB_FILE_SUFFIX=lib
+PF_DYN_LIB_FILE_SUFFIX=dll
+PF_EXE_FILE_SUFFIX=.exe
+
+#--------------------------------------------------------------------------------
+# Build width
+#--------------------------------------------------------------------------------
+PF_WIDTH=32
+
+#--------------------------------------------------------------------------------
+# Paths
+#--------------------------------------------------------------------------------
+
+# Path to where the CPPUNIT libraries are checked in 
+CPPUNIT_LIB_PATH=$(TST_EXT_LIB_DIR)\windows\ia32\cppunit
+
+#--------------------------------------------------------------------------------
+# Tools on this platform
+#--------------------------------------------------------------------------------
+
+# Link a dynamic lib 
+LINK_DYNLIB=notused
+
+#--------------------------------------------------------------------------------
+# Link switches for this platform, per target
+#--------------------------------------------------------------------------------
+
+LDFLAGS_DYNLIB = -ldl -lpthread -lcrypt -lrt
+LDFLAGS_EXECUTABLE = -ldl -lpthread -lrt
+
+# The Core Provider Module links with these 
+LDFLAGS_COREPROVIDERMODULE = $(LDFLAGS_DYNLIB)
+
+# The Test Provider Module links with these
+LDFLAGS_TESTPROVIDERMODULE = $(LDFLAGS_DYNLIB)
+
+# The testrunner links with these
+LDFLAGS_TESTRUNNER = $(LDFLAGS_EXECUTABLE)   
+
+#-------------------------------- End of File -----------------------------------
+

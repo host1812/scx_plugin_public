@@ -1,0 +1,1990 @@
+? LINUX_X86_64_GNU
+? post-merge.diff
+? pre-merge.diff
+? scx.vars
+? src/Pegasus/Common/ProductDirectoryStructure.h
+? src/Pegasus/Common/ProductVersion.h
+? src/Pegasus/Config/DefaultPropertyTableHpuxSCX.h
+? src/Pegasus/Config/DefaultPropertyTableLinuxSCX.h
+? src/Pegasus/Config/DefaultPropertyTableSCX.h
+? src/Pegasus/Config/FixedPropertyTableAixSCX.h
+? src/Pegasus/Config/FixedPropertyTableHpuxSCX.h
+? src/Pegasus/Config/FixedPropertyTableLinuxSCX.h
+? src/Pegasus/Config/FixedPropertyTableSCX.h
+? src/Pegasus/Config/FixedPropertyTableSolarisSCX.h
+? src/Pegasus/Config/ProductDirectoryStructure.h
+Index: Makefile.Release
+===================================================================
+RCS file: /cvs/MSB/pegasus/Makefile.Release,v
+retrieving revision 1.93
+diff -u -r1.93 Makefile.Release
+--- Makefile.Release	11 Dec 2008 23:41:07 -0000	1.93
++++ Makefile.Release	15 Dec 2008 22:07:04 -0000
+@@ -56,6 +56,23 @@
+ 	@$(MAKE) --directory=$(ROOT) -f Makefile.Release stage
+ 	@$(ECHO) "build completed successfully"
+ 
++##==============================================================================
++##
++## buildmu:
++##
++##     Target to build MU utility and move the executable to the bin directory.
++##
++##==============================================================================
++
++ifeq ($(PEGASUS_BUILD_SCX),true)
++buildmu: FORCE
++	$(MKDIRHIER) $(BIN_DIR)
++	$(MAKE) --directory=$(PEGASUS_ROOT)/src/utils/mu -f Makefile
++	$(COPY) $(PEGASUS_ROOT)/src/utils/mu/mu $(BIN_DIR)
++endif
++
++##==============================================================================
++
+ repository: FORCE
+ 	$(CHMOD) $(Prwxrwxrwx) $(PEGASUS_HOME)
+ 	$(MAKE) "-SC" Schemas/Pegasus repository
+@@ -515,9 +532,18 @@
+ 	@$(ECHO-E) "# define PEGASUS_PAM_STANDALONE_PROC_NAME"  \
+              "\""$(PEGASUS_SBIN_DIR)/cimservera"\"" \
+              >> $(ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
++ifeq ($(PEGASUS_BUILD_SCX),true)
++	@$(ECHO-E) "# define PEGASUS_PROVIDER_AGENT_PROC_NAME"  \
++             "\""$(PEGASUS_PROVIDER_AGENT_PROC_NAME)"\"" \
++              >> $(ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
++ 	@$(ECHO-E) "# define PEGASUS_SERVER_PROCESS_NAME"  \
++             "\""$(PEGASUS_SERVER_PROCESS_NAME)"\"" \
++             >> $(ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
++else
+ 	@$(ECHO-E) "# define PEGASUS_PROVIDER_AGENT_PROC_NAME"  \
+              "\""$(PEGASUS_SBIN_DIR)/cimprovagt"\"" \
+              >> $(ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
++endif
+ 	@$(ECHO-E) "" \
+              >> $(ROOT)/src/Pegasus/Common/ProductDirectoryStructure.h
+ 	@$(ECHO-E) "#endif /* Common_Product_Directory_Structure_h */ " \
+Index: Schemas/Pegasus/Makefile
+===================================================================
+RCS file: /cvs/MSB/pegasus/Schemas/Pegasus/Makefile,v
+retrieving revision 1.12
+diff -u -r1.12 Makefile
+--- Schemas/Pegasus/Makefile	2 Dec 2008 08:59:58 -0000	1.12
++++ Schemas/Pegasus/Makefile	15 Dec 2008 22:07:05 -0000
+@@ -42,7 +42,9 @@
+ repository:
+ 	$(MAKE) --directory=Internal repository
+ 	$(MAKE) --directory=InterOp repository
++ifneq ($(PEGASUS_BUILD_SCX),true)
+ 	$(MAKE) --directory=ManagedSystem repository
++endif
+ 
+ # Delete and rebuild the core namespaces using the client MOF compiler
+ repositoryServer:
+Index: mak/commands.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/commands.mak,v
+retrieving revision 1.64
+diff -u -r1.64 commands.mak
+--- mak/commands.mak	2 Dec 2008 09:00:01 -0000	1.64
++++ mak/commands.mak	15 Dec 2008 22:07:05 -0000
+@@ -335,7 +335,7 @@
+     MKDIRHIER = mkdir -p
+     RMDIRHIER = rm -rf
+     ECHO = echo
+-    ECHO-E = 
++    ECHO-E = echo -e
+     COPY = cp
+     CHMOD = chmod
+     CHOWN = chown
+Index: mak/config-linux.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/config-linux.mak,v
+retrieving revision 1.60
+diff -u -r1.60 config-linux.mak
+--- mak/config-linux.mak	2 Dec 2008 09:00:01 -0000	1.60
++++ mak/config-linux.mak	15 Dec 2008 22:07:05 -0000
+@@ -89,7 +89,9 @@
+ 
+ LIB_SUFFIX = .so.$(MAJOR_VERSION_NUMBER)
+ 
++ifneq ($(PEGASUS_BUILD_SCX),true)
+ DEFINES += -DPEGASUS_USE_SYSLOGS
++endif
+ 
+ SYS_LIBS = -ldl -lpthread -lcrypt
+ 
+Index: mak/config.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/config.mak,v
+retrieving revision 1.182
+diff -u -r1.182 config.mak
+--- mak/config.mak	2 Dec 2008 09:00:01 -0000	1.182
++++ mak/config.mak	15 Dec 2008 22:07:05 -0000
+@@ -707,9 +707,37 @@
+   DEFINES += -DPEGASUS_USE_NET_SNMP
+ endif
+ 
++##==============================================================================
++##
++## PEGASUS_BUILD_SCX
++##
++##     Define when building Microsoft System Center X-Plat.
++##
++##==============================================================================
++
++ifndef PEGASUS_BUILD_SCX
++  PEGASUS_BUILD_SCX=false
++endif
++
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  DEFINES += -DPEGASUS_BUILD_SCX
++else
++  ifneq ($(PEGASUS_BUILD_SCX),false)
++    $(error "PEGASUS_BUILD_SCX must be true or false")
++  endif
++endif
++
++##==============================================================================
++
+ ifdef PEGASUS_HAS_SSL
+     DEFINES += -DPEGASUS_HAS_SSL 
+ 
++    ifeq ($(PEGASUS_BUILD_SCX),true)
++      ifeq ($(PEGASUS_PLATFORM), SOLARIS_SPARC_CC)
++        DEFINES += `pkg-config --cflags openssl`
++      endif
++    endif
++
+     # Enable SSL Random file by default.
+     ifndef PEGASUS_USE_SSL_RANDOMFILE
+         PEGASUS_USE_SSL_RANDOMFILE = true
+@@ -1357,6 +1385,12 @@
+     ifeq ($(HAS_PAM_DEPENDENCY),true)
+         SYS_LIBS += -lpam
+     endif
++
++    ifeq ($(PEGASUS_BUILD_SCX),true)
++      ifdef PEGASUS_PAM_SERVICE_NAME
++	DEFINES += -DPEGASUS_PAM_SERVICE_NAME=\"$(PEGASUS_PAM_SERVICE_NAME)\"
++      endif
++    endif
+ endif
+ 
+ ##==============================================================================
+@@ -1475,3 +1509,27 @@
+ ifndef PLATFORM_CORE_PATTERN
+     PLATFORM_CORE_PATTERN = core*
+ endif
++
++##==============================================================================
++##
++## PEGASUS_CIMMOF_PROGRAM_NAME
++##
++##==============================================================================
++
++ifdef PEGASUS_CIMMOF_PROGRAM_NAME
++  DEFINES += -DPEGASUS_CIMMOF_PROGRAM_NAME=\"$(PEGASUS_CIMMOF_PROGRAM_NAME)\"
++else
++  DEFINES += -DPEGASUS_CIMMOF_PROGRAM_NAME=\"cimmof\"
++endif
++
++##==============================================================================
++##
++## PEGASUS_CIMMOFL_PROGRAM_NAME
++##
++##==============================================================================
++
++ifdef PEGASUS_CIMMOFL_PROGRAM_NAME
++  DEFINES += -DPEGASUS_CIMMOFL_PROGRAM_NAME=\"$(PEGASUS_CIMMOFL_PROGRAM_NAME)\"
++else
++  DEFINES += -DPEGASUS_CIMMOFL_PROGRAM_NAME=\"cimmofl\"
++endif
+Index: mak/platform_AIX_RS_IBMCXX.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_AIX_RS_IBMCXX.mak,v
+retrieving revision 1.37
+diff -u -r1.37 platform_AIX_RS_IBMCXX.mak
+--- mak/platform_AIX_RS_IBMCXX.mak	2 Dec 2008 09:00:01 -0000	1.37
++++ mak/platform_AIX_RS_IBMCXX.mak	15 Dec 2008 22:07:05 -0000
+@@ -50,6 +50,10 @@
+ FLAGS = -O2 -s
+ endif
+ 
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  FLAGS += -q32
++endif
++
+ FLAGS += -qrtti=dyna -qcpluscmt -qlanglvl=newexcp
+ 
+ SYS_LIBS = -ldl 
+Index: mak/platform_HPUX_ACC.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_HPUX_ACC.mak,v
+retrieving revision 1.51
+diff -u -r1.51 platform_HPUX_ACC.mak
+--- mak/platform_HPUX_ACC.mak	9 Dec 2008 19:11:21 -0000	1.51
++++ mak/platform_HPUX_ACC.mak	15 Dec 2008 22:07:05 -0000
+@@ -71,7 +71,9 @@
+ 
+ DEFINES = -DPEGASUS_PLATFORM_$(PEGASUS_PLATFORM) -DPEGASUS_PLATFORM_HPUX_ACC
+ 
+-DEFINES += -DPEGASUS_USE_SYSLOGS
++ifneq ($(PEGASUS_BUILD_SCX),true)
++  DEFINES += -DPEGASUS_USE_SYSLOGS
++endif
+ 
+ ifdef PEGASUS_USE_EMANATE
+  DEFINES += -DHPUX_EMANATE
+@@ -139,8 +141,15 @@
+   FLAGS += +O2 -s
+ endif
+ 
++
+ ifdef PEGASUS_USE_RELEASE_DIRS
++  ifeq ($(PEGASUS_BUILD_SCX),true)
++    ifndef PEGASUS_OVERRIDE_DEFAULT_RELEASE_DIRS
++      PEGASUS_DEST_LIB_DIR=/opt/wbem/lib
++    endif
++  else
+     PEGASUS_DEST_LIB_DIR=/opt/wbem/lib
++  endif
+ endif
+ 
+ #
+Index: mak/platform_HPUX_IA64_ACC.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_HPUX_IA64_ACC.mak,v
+retrieving revision 1.15
+diff -u -r1.15 platform_HPUX_IA64_ACC.mak
+--- mak/platform_HPUX_IA64_ACC.mak	2 Dec 2008 09:00:01 -0000	1.15
++++ mak/platform_HPUX_IA64_ACC.mak	15 Dec 2008 22:07:05 -0000
+@@ -41,5 +41,10 @@
+   DEFINES += -DHPUX_IA64_NATIVE_COMPILER
+ endif
+ 
+-FLAGS += +Z +DD64 -mt -Wl,+rpathfirst
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  FLAGS += +Z +DD32 -AA -mt -Wl,+rpathfirst
++else
++  FLAGS += +Z +DD64 -mt -Wl,+rpathfirst
++endif
++
+ EXTRA_CXX_FLAGS += -AA
+Index: mak/platform_HPUX_PARISC_ACC.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_HPUX_PARISC_ACC.mak,v
+retrieving revision 1.35
+diff -u -r1.35 platform_HPUX_PARISC_ACC.mak
+--- mak/platform_HPUX_PARISC_ACC.mak	2 Dec 2008 09:00:01 -0000	1.35
++++ mak/platform_HPUX_PARISC_ACC.mak	15 Dec 2008 22:07:05 -0000
+@@ -31,6 +31,16 @@
+ 
+ ARCHITECTURE = PARISC
+ 
+-SYS_INCLUDES += -I$(ROOT)/src/stdcxx/stream
++ifeq ($(PEGASUS_BUILD_SCX),true)
+ 
+-FLAGS += +Z +DAportable -mt -D_PSTAT64
++  ifeq ($(HPUX_IA64_NATIVE_COMPILER), yes)
++    DEFINES += -DHPUX_IA64_NATIVE_COMPILER
++  else
++    SYS_INCLUDES += -I$(ROOT)/src/stdcxx/stream
++  endif
++
++  FLAGS += +Z +DD32 -AA -mt -D_PSTAT64
++else
++  SYS_INCLUDES += -I$(ROOT)/src/stdcxx/stream
++  FLAGS += +Z +DAportable -mt -D_PSTAT64
++endif
+Index: mak/platform_SOLARIS_CC.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_SOLARIS_CC.mak,v
+retrieving revision 1.4
+diff -u -r1.4 platform_SOLARIS_CC.mak
+--- mak/platform_SOLARIS_CC.mak	2 Dec 2008 09:00:01 -0000	1.4
++++ mak/platform_SOLARIS_CC.mak	15 Dec 2008 22:07:05 -0000
+@@ -83,7 +83,11 @@
+   FLAGS += -pto
+ endif
+ 
+-FLAGS += +w -KPIC -mt -xildoff
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  FLAGS = -xO3 -xspace -KPIC -mt -xildoff -s
++else
++  FLAGS += +w -KPIC -mt -xildoff
++endif
+ 
+ ##==============================================================================
+ ##
+Index: mak/platform_SOLARIS_SPARC_GNU.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/platform_SOLARIS_SPARC_GNU.mak,v
+retrieving revision 1.12
+diff -u -r1.12 platform_SOLARIS_SPARC_GNU.mak
+--- mak/platform_SOLARIS_SPARC_GNU.mak	2 Dec 2008 09:00:01 -0000	1.12
++++ mak/platform_SOLARIS_SPARC_GNU.mak	15 Dec 2008 22:07:05 -0000
+@@ -38,6 +38,10 @@
+ 
+ DEFINES = -DPEGASUS_PLATFORM_$(PEGASUS_PLATFORM) -D_POSIX_PTHREAD_SEMANTICS -D BSD_COMP -D_REENTRANT
+ 
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  DEFINES += -DPEGASUS_HAVE_TEMPLATE_SPECIALIZATION
++endif
++
+ DEFINES += -DPEGASUS_OS_SOLARIS
+ 
+ SUNOS_VERSION = $(shell uname -r)
+Index: mak/program-unix.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/program-unix.mak,v
+retrieving revision 1.51
+diff -u -r1.51 program-unix.mak
+--- mak/program-unix.mak	9 Dec 2008 19:11:21 -0000	1.51
++++ mak/program-unix.mak	15 Dec 2008 22:07:05 -0000
+@@ -78,6 +78,12 @@
+   FLAGS += -Wl,-brtl -Wl,-bhalt:$(AIX_LD_HALT)
+ endif
+ 
++ifeq ($(PEGASUS_BUILD_SCX),true)
++  BLIBPATH=/opt/microsoft/scx/lib:/opt/microsoft/scx/lib/providers:/opt/microsoft/scx/lib/providers/ext:/usr/lib:/lib
++else
++  BLIBPATH=/usr/lib:/lib
++endif
++
+ $(FULL_PROGRAM): $(OBJ_DIR)/target $(BIN_DIR)/target $(OBJECTS) $(FULL_LIBRARIES) $(ERROR)
+ ifeq ($(PEGASUS_SUPPORTS_DYNLIB),yes)
+ 
+@@ -100,10 +106,10 @@
+          ifdef  PEGASUS_USE_RELEASE_DIRS
+            ifdef PEGASUS_HAS_MESSAGES
+              ifdef ICU_INSTALL
+-	       $(LINK_WRAPPER) $(CXX) -Wl,-brtl -blibpath:/usr/lib:/lib:$(ICU_INSTALL)/lib -Wl,-bhalt:$(AIX_LD_HALT) $(FLAGS) $(EXTRA_LINK_FLAGS) -L$(LIB_DIR) $(EXE_OUTPUT) $(OBJECTS) $(DYNAMIC_LIBRARIES) $(SYS_LIBS) $(EXTRA_LIBRARIES)
++	       $(LINK_WRAPPER) $(CXX) -Wl,-brtl -blibpath:$(BLIBPATH):$(ICU_INSTALL)/lib -Wl,-bhalt:$(AIX_LD_HALT) $(FLAGS) $(EXTRA_LINK_FLAGS) -L$(LIB_DIR) $(EXE_OUTPUT) $(OBJECTS) $(DYNAMIC_LIBRARIES) $(SYS_LIBS) $(EXTRA_LIBRARIES)
+              endif
+            else
+-	     $(LINK_WRAPPER) $(CXX) -Wl,-brtl -blibpath:/usr/lib:/lib -Wl,-bhalt:$(AIX_LD_HALT) $(FLAGS) $(EXTRA_LINK_FLAGS) -L$(LIB_DIR) $(EXE_OUTPUT) $(OBJECTS) $(DYNAMIC_LIBRARIES) $(SYS_LIBS) $(EXTRA_LIBRARIES)
++	     $(LINK_WRAPPER) $(CXX) -Wl,-brtl -blibpath:$(BLIBPATH) -Wl,-bhalt:$(AIX_LD_HALT) $(FLAGS) $(EXTRA_LINK_FLAGS) -L$(LIB_DIR) $(EXE_OUTPUT) $(OBJECTS) $(DYNAMIC_LIBRARIES) $(SYS_LIBS) $(EXTRA_LIBRARIES)
+            endif
+          else
+ 	   $(LINK_WRAPPER) $(CXX) -Wl,-brtl -Wl,-bhalt:$(AIX_LD_HALT) $(FLAGS) $(EXTRA_LINK_FLAGS) -L$(LIB_DIR) $(EXE_OUTPUT) $(OBJECTS) $(DYNAMIC_LIBRARIES) $(SYS_LIBS) $(EXTRA_LIBRARIES)
+Index: mak/shared-library-unix.mak
+===================================================================
+RCS file: /cvs/MSB/pegasus/mak/shared-library-unix.mak,v
+retrieving revision 1.18
+diff -u -r1.18 shared-library-unix.mak
+--- mak/shared-library-unix.mak	9 Dec 2008 19:11:21 -0000	1.18
++++ mak/shared-library-unix.mak	15 Dec 2008 22:07:05 -0000
+@@ -27,22 +27,30 @@
+ #//
+ #//////////////////////////////////////////////////////////////////////////
+ 
+-
+ ##==============================================================================
+ ##
+ ## xlc compiler
+ ##
+ ##==============================================================================
+ 
++
+ ifeq ($(COMPILER),xlc)
+   LINK_COMMAND = xlC_r
++
++  ifeq ($(PEGASUS_BUILD_SCX),true)
++    LINK_COMMAND += -q32
++    BLIBPATH_ARG=-bnolibpath
++  else
++    BLIBPATH_ARG=-blibpath:/usr/lib:/lib
++  endif
++
+   ifdef PEGASUS_USE_RELEASE_DIRS
+     ifdef PEGASUS_HAS_MESSAGES
+       ifdef ICU_INSTALL
+         LINK_ARGUMENTS = -qmkshrobj=$(AIX_LIB_PRIORITY) -blibpath:/usr/lib:/lib:$(ICU_INSTALL)/lib -Wl,-bhalt:$(AIX_LD_HALT)
+       endif
+     else
+-      LINK_ARGUMENTS = -qmkshrobj=$(AIX_LIB_PRIORITY) -blibpath:/usr/lib:/lib -Wl,-bhalt:$(AIX_LD_HALT)
++      LINK_ARGUMENTS = -qmkshrobj=$(AIX_LIB_PRIORITY) $(BLIBPATH_ARG) -Wl,-bhalt:$(AIX_LD_HALT)
+     endif
+   else
+     LINK_ARGUMENTS = -qmkshrobj=$(AIX_LIB_PRIORITY) -Wl,-bhalt:$(AIX_LD_HALT)
+@@ -62,9 +70,17 @@
+ ifeq ($(COMPILER),acc)
+   LINK_COMMAND = $(CXX) -b -Wl,+hlib$(LIBRARY)$(LIB_SUFFIX)
+   ifeq ($(PEGASUS_PLATFORM), HPUX_IA64_ACC)
+-    LINK_COMMAND += +DD64 -mt -Wl,+rpathfirst
++    ifeq ($(PEGASUS_BUILD_SCX),true)
++      LINK_COMMAND += +DD32 -mt -Wl,+rpathfirst
++    else
++      LINK_COMMAND += +DD64 -mt -Wl,+rpathfirst
++    endif
+   else
+-    LINK_COMMAND += -Wl,-Bsymbolic
++    ifeq ($(PEGASUS_BUILD_SCX),true)
++      LINK_COMMAND += -AA +DD32 -mt -Wl,-Bsymbolic
++    else
++      LINK_COMMAND += -Wl,-Bsymbolic
++    endif
+   endif
+   ifeq ($(PEGASUS_SUPPORTS_DYNLIB),yes)
+     LINK_COMMAND += $(ACC_LINK_SEARCH_PATH)
+Index: src/Clients/cimcli/CIMCLICommand.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Clients/cimcli/CIMCLICommand.cpp,v
+retrieving revision 1.4
+diff -u -r1.4 CIMCLICommand.cpp
+--- src/Clients/cimcli/CIMCLICommand.cpp	5 Dec 2008 05:43:01 -0000	1.4
++++ src/Clients/cimcli/CIMCLICommand.cpp	15 Dec 2008 22:07:05 -0000
+@@ -38,6 +38,7 @@
+ #include <Pegasus/Common/Tracer.h>
+ #include <Pegasus/Common/Stopwatch.h>
+ #include <Pegasus/Common/HostLocator.h>
++#include <Pegasus/Common/System.h>
+ 
+ #ifdef PEGASUS_OS_ZOS
+ #include <Pegasus/Common/SetFileDescriptorToEBCDICEncoding.h>
+@@ -231,6 +232,7 @@
+ 
+ int main(int argc, char** argv)
+ {
++    const char* arg0 = System::findBaseName(argv[0]);
+ 
+ #ifdef PEGASUS_OS_ZOS
+     // for z/OS set stdout and stderr to EBCDIC
+@@ -354,7 +356,7 @@
+     else
+     {
+         cout << " Command name must be first parameter or --c parameter."
+-            << " \n  ex. cli enumerateclasses\n"
++            << " \n  ex. " << argv[0] <<  " enumerateclasses\n"
+             << "Enter " << argv[0] << " -h for help."
+             << endl;
+         exit(1);
+@@ -608,8 +610,9 @@
+                 case ID_GetProperty :
+                     if (argc != 4)
+                     {
+-                        cout << "Usage: cli getproperty <instancename>"
+-                            "<propertyname>" << endl;
++                        cout << "Usage: " << arg0 <<
++                            " getproperty <instancename> <propertyname>" << 
++                            endl;
+                         exit(1);
+                     }
+ 
+@@ -622,9 +625,8 @@
+ 
+                 case ID_SetProperty :
+                     if (argc != 5)
+-                        cout <<
+-                           "Usage: cli setproperty instancename propertyname"
+-                                " value "
++                        cout <<"Usage: " << arg0 << 
++                          " setproperty instancename propertyname value "
+                            << endl;
+                     setProperty(client, opts);
+                     break;
+@@ -767,7 +769,7 @@
+                 default:
+                     cout << "Invalid Command. Command name must be first parm"
+                             " or --c parameter."
+-                        << " \n  ex. cli enumerateclasses\n"
++                        << " \n  ex. " << arg0 << " enumerateclasses\n"
+                         << "Enter " << argv[0] << " -h for help."
+                         << endl;
+                     exit(1);
+Index: src/Clients/cimconfig/CIMConfigCommand.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Clients/cimconfig/CIMConfigCommand.cpp,v
+retrieving revision 1.71
+diff -u -r1.71 CIMConfigCommand.cpp
+--- src/Clients/cimconfig/CIMConfigCommand.cpp	2 Dec 2008 09:00:06 -0000	1.71
++++ src/Clients/cimconfig/CIMConfigCommand.cpp	15 Dec 2008 22:07:05 -0000
+@@ -39,6 +39,7 @@
+ #include <Pegasus/Common/CIMStatusCode.h>
+ #include <Pegasus/Common/Exception.h>
+ #include <Pegasus/Common/PegasusVersion.h>
++#include <Pegasus/Common/System.h>
+ #include <Pegasus/getoopt/getoopt.h>
+ 
+ #include <Pegasus/Client/CIMClient.h>
+@@ -65,9 +66,10 @@
+ //l10n end
+ 
+ /**
+-    The command name.
++    The command name. This will refer to the name of the command without
++    the leading path.
+ */
+-static const char COMMAND_NAME []              = "cimconfig";
++static const char* arg0;
+ 
+ /**
+     The usage string for this command.  This string is displayed
+@@ -392,7 +394,7 @@
+     usage.reserveCapacity(200);
+     usage.append(USAGE);
+     
+-    usage.append(COMMAND_NAME);
++    usage.append(arg0);
+ 
+     usage.append(" -").append(OPTION_GET).append(" name");
+     usage.append(" [ -").append(OPTION_CURRENT_VALUE); 
+@@ -1691,6 +1693,7 @@
+ 
+ int main (int argc, char* argv []) 
+ {
++    arg0 = System::findBaseName(argv[0]);
+ #ifdef PEGASUS_OS_PASE
+     // Allow user group name larger than 8 chars in PASE environemnt
+     setenv("PASE_USRGRP_LIMITED","N",1);
+@@ -1722,11 +1725,11 @@
+     } 
+     catch (const CommandFormatException& cfe) 
+     {
+-        cerr << COMMAND_NAME << ": " << cfe.getMessage() << endl;
++        cerr << arg0 << ": " << cfe.getMessage() << endl;
+ 
+         MessageLoaderParms parms(ERR_USAGE_KEY,ERR_USAGE);
+         parms.msg_src_path = MSG_PATH;
+-        cerr << COMMAND_NAME <<
++        cerr << arg0 <<
+             ": " << MessageLoader::getMessage(parms) << endl;
+         exit (Command::RC_ERROR);
+     }
+Index: src/Clients/wbemexec/WbemExecCommand.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Clients/wbemexec/WbemExecCommand.cpp,v
+retrieving revision 1.86
+diff -u -r1.86 WbemExecCommand.cpp
+--- src/Clients/wbemexec/WbemExecCommand.cpp	2 Dec 2008 09:00:12 -0000	1.86
++++ src/Clients/wbemexec/WbemExecCommand.cpp	15 Dec 2008 22:07:05 -0000
+@@ -47,6 +47,7 @@
+ #include <Pegasus/Common/SSLContext.h>
+ #include <Pegasus/Common/AutoPtr.h>
+ #include <Pegasus/Common/PegasusVersion.h>
++#include <Pegasus/Common/System.h>
+ 
+ #include <Pegasus/getoopt/getoopt.h>
+ #include <Clients/cliutils/CommandException.h>
+@@ -62,9 +63,9 @@
+ PEGASUS_NAMESPACE_BEGIN
+ 
+ /**
+-    The command name.
++    The command name (argv[0] without any leading path elements).
+  */
+-const char   WbemExecCommand::COMMAND_NAME []      = "wbemexec";
++static const char* arg0;
+ 
+ /**
+     Label for the usage string for this command.
+@@ -222,7 +223,7 @@
+     //  The debug option is not included in end-user documentation.
+     //
+     usage = String (_USAGE);
+-    usage.append (COMMAND_NAME);
++    usage.append (arg0);
+     usage.append (" [ -");
+     usage.append (_OPTION_HOSTNAME);
+     usage.append (" hostname ] [ -");
+@@ -1132,25 +1133,25 @@
+     }
+     catch (const WbemExecException& e)
+     {
+-        errPrintWriter << WbemExecCommand::COMMAND_NAME << ": " <<
++        errPrintWriter << arg0 << ": " <<
+             e.getMessage () << endl;
+         return (RC_ERROR);
+     }
+     catch (const Exception& e)
+     {
+-        errPrintWriter << WbemExecCommand::COMMAND_NAME << ": " <<
++        errPrintWriter << arg0 << ": " <<
+             e.getMessage() << endl;
+         return (RC_ERROR);
+     }
+     catch (const exception& e)
+     {
+-        errPrintWriter << WbemExecCommand::COMMAND_NAME << ": " <<
++        errPrintWriter << arg0 << ": " <<
+             e.what() << endl;
+         return (RC_ERROR);
+     }
+     catch (...)
+     {
+-        errPrintWriter << WbemExecCommand::COMMAND_NAME << ": " <<
++        errPrintWriter << arg0 << ": " <<
+             "Unknown error thrown" << endl;
+         return (RC_ERROR);
+     }
+@@ -1176,6 +1177,7 @@
+ 
+ int main (int argc, char* argv [])
+ {
++    arg0 = System::findBaseName(argv[0]);
+     WbemExecCommand    command = WbemExecCommand ();
+     int                rc;
+     MessageLoader::setPegasusMsgHomeRelative(argv[0]);
+@@ -1192,12 +1194,12 @@
+     }
+     catch (const CommandFormatException& cfe)
+     {
+-        cerr << WbemExecCommand::COMMAND_NAME << ": " << cfe.getMessage() 
++        cerr << arg0 << ": " << cfe.getMessage() 
+             << endl;
+ 
+         MessageLoaderParms parms(ERR_USAGE_KEY,ERR_USAGE);
+         parms.msg_src_path = MSG_PATH;
+-        cerr << WbemExecCommand::COMMAND_NAME <<
++        cerr << arg0 <<
+             ": " << MessageLoader::getMessage(parms) << endl;
+ 
+         exit (Command::RC_ERROR);
+Index: src/Clients/wbemexec/WbemExecCommand.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Clients/wbemexec/WbemExecCommand.h,v
+retrieving revision 1.24
+diff -u -r1.24 WbemExecCommand.h
+--- src/Clients/wbemexec/WbemExecCommand.h	2 Dec 2008 09:00:12 -0000	1.24
++++ src/Clients/wbemexec/WbemExecCommand.h	15 Dec 2008 22:07:05 -0000
+@@ -91,11 +91,6 @@
+      */
+     Uint32 execute (ostream& outPrintWriter, ostream& errPrintWriter);
+ 
+-    /**
+-        The command name.
+-     */
+-    static const char   COMMAND_NAME [];
+-    
+ private:
+ 
+     /**
+Index: src/Executor/PAMAuth.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Executor/PAMAuth.h,v
+retrieving revision 1.7
+diff -u -r1.7 PAMAuth.h
+--- src/Executor/PAMAuth.h	2 Dec 2008 09:00:13 -0000	1.7
++++ src/Executor/PAMAuth.h	15 Dec 2008 22:07:05 -0000
+@@ -45,10 +45,20 @@
+ #include <string.h>
+ #include <Executor/Strlcpy.h>
+ #include <Executor/Strlcat.h>
+-#include <security/pam_appl.h>
++
++#if defined(PEGASUS_BUILD_SCX) && defined(__APPLE__)
++# include <pam/pam_appl.h>
++#else
++# include <security/pam_appl.h>
++#endif
++
+ #include <Executor/Defines.h>
+ #include <Executor/Socket.h>
+ 
++#ifndef PEGASUS_PAM_SERVICE_NAME
++# define PEGASUS_PAM_SERVICE_NAME "wbem"
++#endif
++
+ /*
+ **==============================================================================
+ **
+@@ -300,7 +310,7 @@
+ 
+ static int PAMAuthenticateCallback(
+     int num_msg,
+-#if defined(PEGASUS_OS_LINUX)
++#if defined(PEGASUS_OS_LINUX) || defined(__APPLE__)
+     const struct pam_message** msg,
+ #else
+     struct pam_message** msg,
+@@ -354,7 +364,7 @@
+ 
+ static int PAMValidateUserCallback(
+     int num_msg,
+-#if defined(PEGASUS_OS_LINUX)
++#if defined(PEGASUS_OS_LINUX) || defined(__APPLE__)
+     const struct pam_message** msg,
+ #else
+     struct pam_message** msg,
+@@ -404,7 +414,8 @@
+     pconv.appdata_ptr = &data;
+ 
+ 
+-    if (pam_start("wbem", username, &pconv, &handle) != PAM_SUCCESS)
++    if (pam_start(
++        PEGASUS_PAM_SERVICE_NAME, username, &pconv, &handle) != PAM_SUCCESS)
+         return -1;
+ 
+     if (pam_authenticate(handle, 0) != PAM_SUCCESS)
+@@ -443,7 +454,8 @@
+     pconv.conv = PAMValidateUserCallback;
+     pconv.appdata_ptr = &data;
+ 
+-    if (pam_start("wbem", username, &pconv, &phandle) != PAM_SUCCESS)
++    if (pam_start(
++        PEGASUS_PAM_SERVICE_NAME, username, &pconv, &phandle) != PAM_SUCCESS)
+         return -1;
+ 
+     if (pam_acct_mgmt(phandle, 0) != PAM_SUCCESS)
+Index: src/Pegasus/Common/AuditLoggerToLog.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/AuditLoggerToLog.cpp,v
+retrieving revision 1.7
+diff -u -r1.7 AuditLoggerToLog.cpp
+--- src/Pegasus/Common/AuditLoggerToLog.cpp	2 Dec 2008 09:00:42 -0000	1.7
++++ src/Pegasus/Common/AuditLoggerToLog.cpp	15 Dec 2008 22:07:06 -0000
+@@ -142,6 +142,10 @@
+ 
+ void AuditLogger::logCurrentEnvironmentVar()
+ {
++#if defined(PEGASUS_BUILD_SCX) && \
++    !defined(PEGASUS_PLATFORM_SOLARIS_SPARC_GNU) && \
++    !defined(PEGASUS_PLATFORM_SOLARIS_SPARC_CC)
++
+ #ifdef PEGASUS_OS_DARWIN
+     char** envp = *_NSGetEnviron();
+ #else
+@@ -161,6 +165,8 @@
+ 
+         i++;
+     }
++
++#endif
+ }
+ 
+ void AuditLogger::logSetConfigProperty(
+Index: src/Pegasus/Common/CIMDateTime.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/CIMDateTime.cpp,v
+retrieving revision 1.81
+diff -u -r1.81 CIMDateTime.cpp
+--- src/Pegasus/Common/CIMDateTime.cpp	2 Dec 2008 09:00:42 -0000	1.81
++++ src/Pegasus/Common/CIMDateTime.cpp	15 Dec 2008 22:07:06 -0000
+@@ -1547,10 +1547,7 @@
+ 
+     int tzMinutesEast;
+     {
+-# if defined(PEGASUS_OS_SOLARIS)
+-        tzMinutesEast =
+-            -(int)((tmval->tm_isdst > 0 && daylight) ? altzone : timezone) / 60;
+-# elif defined(PEGASUS_OS_HPUX)
++# if defined(PEGASUS_OS_HPUX) || defined(PEGASUS_PLATFORM_SOLARIS_SPARC_GNU)
+         tzMinutesEast = - (int) timezone / 60;
+         if ((tmval->tm_isdst > 0) && daylight)
+         {
+@@ -1558,6 +1555,9 @@
+             // Assume 1 hour.
+             tzMinutesEast += 60;
+         }
++# elif defined(PEGASUS_OS_SOLARIS)
++        tzMinutesEast =
++            -(int)((tmval->tm_isdst > 0 && daylight) ? altzone : timezone) / 60;
+ # elif defined(PEGASUS_OS_LINUX) || defined(PEGASUS_OS_VMS)
+         tzMinutesEast = (int) tmval->tm_gmtoff/60;
+ # else
+Index: src/Pegasus/Common/Constants.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/Constants.h,v
+retrieving revision 1.143
+diff -u -r1.143 Constants.h
+--- src/Pegasus/Common/Constants.h	2 Dec 2008 09:00:46 -0000	1.143
++++ src/Pegasus/Common/Constants.h	15 Dec 2008 22:07:06 -0000
+@@ -453,6 +453,14 @@
+ #define PEGASUS_MAXLOGFILESIZEKBYTES_CONFIG_PROPERTY_MINIMUM_VALUE 32
+ #endif
+ 
++/*
++ * If not defined by now, define PEGASUS_SERVER_PROCESS_NAME. It might have
++ * been defined by ProductDirectoryStructure.h (then it will not be redefined
++ * here).
++ */
++#if !defined(PEGASUS_SERVER_PROCESS_NAME)
++# define PEGASUS_SERVER_PROCESS_NAME "cimserver"
++#endif
+ 
+ /*
+ **==============================================================================
+Index: src/Pegasus/Common/Logger.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/Logger.cpp,v
+retrieving revision 1.67
+diff -u -r1.67 Logger.cpp
+--- src/Pegasus/Common/Logger.cpp	2 Dec 2008 09:00:48 -0000	1.67
++++ src/Pegasus/Common/Logger.cpp	15 Dec 2008 22:07:06 -0000
+@@ -65,7 +65,12 @@
+ };
+ 
+ LoggerRep* Logger::_rep = 0;
++
++#if defined(PEGASUS_BUILD_SCX)
++String Logger::_homeDirectory;
++#else
+ String Logger::_homeDirectory = ".";
++#endif
+ 
+ const Uint32 Logger::_NUM_LOGLEVEL = 5;
+ 
+@@ -120,6 +125,17 @@
+ 
+ #else    // !defined(PEGASUS_USE_SYSLOGS)
+ 
++#if defined(PEGASUS_BUILD_SCX)
++static const char* lockFileName =  "scxcimdlog.lock";
++static const char* fileNames[] =
++{
++    "scxcimd.log",
++    "scxcimd.log",
++    "scxcimd.log",
++    "scxcimd.log"
++};
++#else
++static const char* lockFileName = "PegasusLog.lock";
+ static const char* fileNames[] =
+ {
+     "PegasusTrace.log",
+@@ -127,7 +143,7 @@
+     "PegasusAudit.log",
+     "PegasusError.log"
+ };
+-static const char* lockFileName = "PegasusLog.lock";
++#endif
+ 
+ /*
+     _constructFileName builds the absolute file name from homeDirectory
+@@ -150,8 +166,12 @@
+ {
+ public:
+ 
+-    LoggerRep(const String& homeDirectory)
++    LoggerRep(const String& homeDirectory) : _homeDirectorySet(false)
+     {
++        // If home directory already set, then return now.
++        if (homeDirectory.size())
++            return;
++
+         // Add test for home directory set.
+ 
+         // If home directory does not exist, create it.
+@@ -197,6 +217,8 @@
+ 
+         _logFileNames[Logger::ERROR_LOG] = _constructFileName(homeDirectory,
+                                                fileNames[Logger::ERROR_LOG]);
++
++        _homeDirectorySet = true;
+     }
+ 
+     ~LoggerRep()
+@@ -225,6 +247,24 @@
+         if (logLevel & Logger::SEVERE) tmp =      "SEVERE  ";
+         if (logLevel & Logger::FATAL) tmp =       "FATAL   ";
+ 
++#if defined(PEGASUS_BUILD_SCX)
++        // WI 3043
++        if (logLevel & Logger::INFORMATION || logLevel & Logger::WARNING ||
++            logLevel & Logger::SEVERE || logLevel & Logger::FATAL)
++        {
++           System::syslog(systemId, logLevel, localizedMsg.getCString());
++        }
++
++        if (!_homeDirectorySet)
++        {
++            // Home directory not set.
++            // Just log to stderr.
++            cerr << System::getCurrentASCIITime() << " " << tmp << 
++                (const char *)messageString.getCString() << endl;
++            return;
++        }
++#endif /* defined(PEGASUS_BUILD_SCX) */
++
+ # ifndef PEGASUS_OS_VMS
+         // Acquire AutoMutex (for thread sync) 
+         // and AutoFileLock (for Process Sync).
+@@ -294,6 +334,8 @@
+     CString _loggerLockFileName;
+     Mutex _mutex;
+ # endif
++
++    bool _homeDirectorySet;
+ };
+ 
+ Uint32 LoggerRep::_maxLogFileSizeBytes;
+@@ -458,6 +500,17 @@
+ void Logger::setHomeDirectory(const String& homeDirectory)
+ {
+     _homeDirectory = homeDirectory;
++
++#if defined(PEGASUS_BUILD_SCX)
++    // SCX: WI 6435. If home directory is changed after the first
++    // item has already been logged then the new directory will never
++    // be used. With this fix it will be reinitialized.
++    if (_rep)
++    {
++        delete _rep;
++        _rep = 0;
++    }
++#endif
+ }
+ 
+ void Logger::setlogLevelMask( const String logLevelList )
+Index: src/Pegasus/Common/Makefile
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/Makefile,v
+retrieving revision 1.177
+diff -u -r1.177 Makefile
+--- src/Pegasus/Common/Makefile	2 Dec 2008 09:00:48 -0000	1.177
++++ src/Pegasus/Common/Makefile	15 Dec 2008 22:07:06 -0000
+@@ -233,7 +233,13 @@
+             ifdef OPENSSL_HOME
+                 EXTRA_LIBRARIES += -L$(OPENSSL_HOME)/lib
+             endif
+-            EXTRA_LIBRARIES += -lssl -lcrypto
++            ifeq ($(PEGASUS_BUILD_SCX),true)
++              ifeq ($(PEGASUS_PLATFORM),SOLARIS_SPARC_CC)
++	        EXTRA_LIBRARIES += `pkg-config --libs openssl`
++              endif
++            else
++              EXTRA_LIBRARIES += -lssl -lcrypto
++            endif
+         endif
+     endif
+ endif
+Index: src/Pegasus/Common/Network.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/Network.h,v
+retrieving revision 1.23
+diff -u -r1.23 Network.h
+--- src/Pegasus/Common/Network.h	2 Dec 2008 09:00:50 -0000	1.23
++++ src/Pegasus/Common/Network.h	15 Dec 2008 22:07:06 -0000
+@@ -248,7 +248,9 @@
+ //
+ //------------------------------------------------------------------------------
+ 
+-#if defined(PEGASUS_OS_SOLARIS) || \
++#if defined(PEGASUS_PLATFORM_SOLARIS_SPARC_GNU)
++    typedef socklen_t SocketLength;
++#elif defined(PEGASUS_OS_SOLARIS) || \
+     defined(PEGASUS_PLATFORM_TRU64_ALPHA_DECCXX) || \
+     defined(PEGASUS_PLATFORM_WIN64_IA64_MSVC) || \
+     defined(PEGASUS_PLATFORM_WIN64_X86_64_MSVC) || \
+Index: src/Pegasus/Common/Platform_HPUX_PARISC_ACC.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/Platform_HPUX_PARISC_ACC.h,v
+retrieving revision 1.36
+diff -u -r1.36 Platform_HPUX_PARISC_ACC.h
+--- src/Pegasus/Common/Platform_HPUX_PARISC_ACC.h	2 Dec 2008 09:00:51 -0000	1.36
++++ src/Pegasus/Common/Platform_HPUX_PARISC_ACC.h	15 Dec 2008 22:07:06 -0000
+@@ -48,12 +48,24 @@
+ 
+ #define PEGASUS_ARCHITECTURE_PARISC
+ 
++#if defined(PEGASUS_BUILD_SCX)
++# ifdef HPUX_IA64_NATIVE_COMPILER
++#  define PEGASUS_HAVE_NAMESPACES
++# endif
++#endif
++
+ #define PEGASUS_HAVE_TEMPLATE_SPECIALIZATION
+ 
+ #define PEGASUS_MAXHOSTNAMELEN  256
+ 
+-#ifdef PEGASUS_INTERNALONLY
++#if !defined(PEGASUS_BUILD_SCX)
++# ifdef PEGASUS_INTERNALONLY
+ typedef int streamsize;
++# endif
++#endif
++
++#if defined(PEGASUS_BUILD_SCX)
++# define PEGASUS_DISABLE_INTERNAL_INLINES
+ #endif
+ 
+ #define PEGASUS_HAVE_PTHREADS
+@@ -67,4 +79,9 @@
+ /* use POSIX read-write locks on this platform */
+ #define PEGASUS_USE_POSIX_RWLOCK
+ 
++#if defined(PEGASUS_BUILD_SCX)
++# define PEGASUS_DISABLE_INTERNAL_INLINES
++# define PEGASUS_HAS_SIGNALS
++#endif
++
+ #endif /* Pegasus_Platform_HPUX_PARISC_ACC_h */
+Index: src/Pegasus/Common/SpinLock.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/SpinLock.h,v
+retrieving revision 1.10
+diff -u -r1.10 SpinLock.h
+--- src/Pegasus/Common/SpinLock.h	2 Dec 2008 09:00:52 -0000	1.10
++++ src/Pegasus/Common/SpinLock.h	15 Dec 2008 22:07:06 -0000
+@@ -152,7 +152,10 @@
+ //
+ //==============================================================================
+ 
+-#if defined(PEGASUS_PLATFORM_SOLARIS_SPARC_GNU)
++/*
++ATTN:SCX: How can defined(__sparc) not be true after first predicate?
++*/
++#if defined(PEGASUS_PLATFORM_SOLARIS_SPARC_GNU) && defined(__sparc)
+ # define PEGASUS_SPIN_LOCK_DEFINED
+ 
+ # include <new>
+Index: src/Pegasus/Common/System.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/System.cpp,v
+retrieving revision 1.72
+diff -u -r1.72 System.cpp
+--- src/Pegasus/Common/System.cpp	2 Dec 2008 09:00:52 -0000	1.72
++++ src/Pegasus/Common/System.cpp	15 Dec 2008 22:07:06 -0000
+@@ -179,6 +179,33 @@
+     return dirname;
+ }
+ 
++const char* System::findBaseName(const char* path)
++{
++    if (!path)
++	return "";
++
++    // Position "p" on the zero-terminator of "path".
++
++    const char* p = path;
++
++    while (*p)
++	p++;
++
++    // Search backwards for path delimiter.
++
++    for (; p != path; p--)
++    {
++	if (p[-1] == '/')
++	    break;
++#if defined(PEGASUS_OS_TYPE_WINDOWS)
++	if (p[-1] == '\\')
++	    break;
++#endif
++    }
++
++    return p;
++}
++
+ String System::getHostName()
+ {
+     static String _hostname;
+Index: src/Pegasus/Common/System.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/System.h,v
+retrieving revision 1.85
+diff -u -r1.85 System.h
+--- src/Pegasus/Common/System.h	2 Dec 2008 09:00:52 -0000	1.85
++++ src/Pegasus/Common/System.h	15 Dec 2008 22:07:06 -0000
+@@ -406,6 +406,51 @@
+     */
+     static char *extract_file_name(const char *fullpath, char *basename);
+ 
++    /** Returns a pointer to the base component of the given path. The 
++        following table summarizes its behavior on various paths. It also
++	illustrates the behavior of the POSIX basename() function, which handles
++	trailing slashes differently.
++
++	    <pre>
++	    path		findBaseName()       basename()
++	    -----------------------------------------------------
++	    "/usr/lib"		"lib"                   "lib"
++	    "/usr/"		""	                "usr"
++	    "usr"		"usr"                   "usr"
++	    "/"			""                      "/"
++	    "."			"."                     "."
++	    ".."		".."                    ".."
++	    NULL		""			undefined
++	    </pre>
++
++	Note that findBaseName()--unlike POSIX basename()--does not modify
++	the path parameter. Also, findBaseName() treats backslashes as
++	path delimiters on Windows. This function is similar to 
++	extract_file_path() with two important differences. (1) It avoids
++	making a copy of the base name and (2) it treats backslahes as path
++	delimiters on Windows only.
++
++	<p>
++	This function may be used to obtain the program name from argv[0], as
++	passed to the main() function. Since the lifetime of argv and the 
++	process are the same, there is no need to copy the result. The 
++	following code fragment illustrates its use.
++
++	<pre>
++	#include <Pegasus/Common/System.h>
++
++	int main(int argc, char** argv)
++	{
++	    const char* program_name = System::findBaseName(argv[0]);
++	    .
++	    .
++	    .
++	    return 0;
++	}
++	</pre>
++    */
++    static const char* findBaseName(const char* path);
++
+     /** Return just the pathname into dirname. The fullpath can be relative
+         or absolute. This method returns a path minus the file or
+         directory name at the end of a supplied path (fullpath).
+Index: src/Pegasus/Common/SystemPOSIX.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/SystemPOSIX.cpp,v
+retrieving revision 1.64
+diff -u -r1.64 SystemPOSIX.cpp
+--- src/Pegasus/Common/SystemPOSIX.cpp	4 Dec 2008 10:18:11 -0000	1.64
++++ src/Pegasus/Common/SystemPOSIX.cpp	15 Dec 2008 22:07:06 -0000
+@@ -62,6 +62,10 @@
+ 
+ #include "Network.h"
+ 
++#if defined(PEGASUS_BUILD_SCX)
++# define PEGASUS_USE_SYSLOGS    // WI 3043
++#endif
++
+ #if defined(PEGASUS_USE_SYSLOGS)
+ # include <syslog.h>
+ #endif
+@@ -776,6 +780,45 @@
+ #endif
+ }
+ 
++#if defined(PEGASUS_BUILD_SCX)
++static void _createDir(
++    const char* basedir,
++    const char* userName,
++    const PEGASUS_UID_T& uid,
++    const PEGASUS_GID_T& gid)
++{
++    String path(basedir);
++
++    // Try to create a new subdir from the user name
++    path.append(userName);
++
++    if (mkdir(path.getCString(), 0700) == 0)
++    {
++        // Try to change ownership of the new subdir
++        if (chown(path.getCString(), uid, gid) == 0)
++        {
++            Logger::put(Logger::STANDARD_LOG, System::CIMSERVER, 
++                Logger::INFORMATION, String("Created dir: ") + path);
++        }
++        else
++        {
++            Logger::put(Logger::STANDARD_LOG, System::CIMSERVER, Logger::SEVERE,
++                String("Failed to change owner for dir: ") + path);
++        }
++    }
++    else
++    {
++        // If creation of dir failed, only log if the failure was not that it 
++        // already existed
++        if (errno != EEXIST)
++        {
++            Logger::put(Logger::STANDARD_LOG, System::CIMSERVER, Logger::SEVERE,
++                String("Failed to create dir: ") + path);
++        }
++    }
++}
++#endif /* defined(PEGASUS_BUILD_SCX) */
++
+ Boolean System::changeUserContext_SingleThreaded(
+     const char* userName,
+     const PEGASUS_UID_T& uid,
+@@ -800,6 +843,19 @@
+         "Changing user context to: username = %s, uid = %d, gid = %d",
+         userName, (int)uid, (int)gid));
+ 
++#if defined(PEGASUS_BUILD_SCX)
++
++    // If spawning a non-root process, create subdir for scx log & persist 
++    // with new uid as owner, if not already existing, so that we have 
++    // somewhere that this subprocess have permission to write to
++    if (uid != 0)
++    {
++        _createDir("/var/opt/microsoft/scx/lib/state/", userName, uid, gid);
++        _createDir("/var/opt/microsoft/scx/log/", userName, uid, gid);
++    }
++
++#endif /* defined(PEGASUS_BUILD_SCX) */
++
+     if (setgid(gid) != 0)
+     {
+         PEG_TRACE((TRC_OS_ABSTRACTION, Tracer::LEVEL1,
+@@ -872,7 +928,9 @@
+ void System::syslog(const String& ident, Uint32 severity, const char* message)
+ {
+ #if defined(PEGASUS_USE_SYSLOGS) && \
+-    (defined(PEGASUS_OS_HPUX) || defined(PEGASUS_OS_LINUX))
++    (defined(PEGASUS_OS_HPUX) || \
++    defined(PEGASUS_OS_LINUX) || \
++    defined(PEGASUS_OS_SOLARIS))
+ 
+     // Since the openlog(), syslog(), and closelog() function calls must be
+     // coordinated (see below), we need a thread control.
+@@ -891,7 +949,32 @@
+ 
+     // Map from the Logger log level to the system log level.
+ 
++#if defined(PEGASUS_BUILD_SCX)
++    Uint32 syslogLevel = LOG_DAEMON;
++
++    if (severity & Logger::FATAL)
++    {
++        syslogLevel |= LOG_CRIT;
++    }
++    else if (severity & Logger::SEVERE)
++    {
++        syslogLevel |= LOG_ERR;
++    }
++    else if (severity & Logger::WARNING)
++    {
++        syslogLevel |= LOG_WARNING;
++    }
++    else if (severity & Logger::INFORMATION)
++    {
++        syslogLevel |= LOG_INFO;
++    }
++    else // if (severity & Logger::TRACE)
++    {
++        syslogLevel |= LOG_DEBUG;
++    }
++#else
+     Uint32 syslogLevel;
++
+     if (severity & Logger::FATAL)
+     {
+         syslogLevel = LOG_CRIT;
+@@ -912,6 +995,7 @@
+     {
+         syslogLevel = LOG_DEBUG;
+     }
++#endif
+ 
+     // Write the message to the system log.
+ 
+Index: src/Pegasus/Common/tests/System/System.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Common/tests/System/System.cpp,v
+retrieving revision 1.9
+diff -u -r1.9 System.cpp
+--- src/Pegasus/Common/tests/System/System.cpp	2 Dec 2008 09:01:16 -0000	1.9
++++ src/Pegasus/Common/tests/System/System.cpp	15 Dec 2008 22:07:07 -0000
+@@ -90,6 +90,19 @@
+ }
+ #endif
+ 
++static void _testFindBaseName()
++{
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName("/usr/lib"), "lib") == 0);
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName("/usr/"), "") == 0);
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName("/"), "") == 0);
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName("."), ".") == 0);
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName(".."), "..") == 0);
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName(0), "") == 0);
++#if defined(PEGASUS_OS_TYPE_WINDOWS)
++    PEGASUS_TEST_ASSERT(strcmp(System::findBaseName("a\\b"), "b") == 0);
++#endif
++}
++
+ int main(int argc, char** argv)
+ {
+     PEGASUS_TEST_ASSERT(System::strcasecmp("","") == 0);
+@@ -215,6 +228,8 @@
+     _testIPv6 ();
+ #endif
+ 
++    _testFindBaseName();
++
+     cout << argv[0] << " +++++ passed all tests" << endl;
+ 
+     return 0;
+Index: src/Pegasus/Compiler/cmdline/cimmof/cmdline.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Compiler/cmdline/cimmof/cmdline.cpp,v
+retrieving revision 1.66
+diff -u -r1.66 cmdline.cpp
+--- src/Pegasus/Compiler/cmdline/cimmof/cmdline.cpp	2 Dec 2008 09:01:22 -0000	1.66
++++ src/Pegasus/Compiler/cmdline/cimmof/cmdline.cpp	15 Dec 2008 22:07:07 -0000
+@@ -70,6 +70,7 @@
+ #include <Pegasus/Common/String.h>
+ #include <Pegasus/Common/FileSystem.h>
+ #include <Pegasus/Common/PegasusVersion.h>
++#include <Pegasus/Common/System.h>
+ 
+ #ifdef PEGASUS_ENABLE_PRIVILEGE_SEPARATION
+ #include <Pegasus/Common/Constants.h>
+@@ -86,16 +87,19 @@
+ 
+ #define DEFAULT_SERVER_AND_PORT "localhost:5988"
+ 
++// Name of program less leading path.
++static String arg0;
++
+ ostream & cimmofl_warning(ostream &os)
+ {
+ 
+   String warn =
+-      "Warning: Use of cimmofl can corrupt the CIM Server Repository.\n";
++      "Warning: Use of " + arg0 + " can corrupt the CIM Server Repository.\n";
+   warn.append (
+-      "         cimmofl should only be used under very controlled"
++      "         " + arg0 + " should only be used under very controlled"
+             " situations.\n");
+   warn.append (
+-      "         cimmof is the recommended OpenPegasus MOF compiler.\n\n");
++      "         " + arg0 + " is the recommended OpenPegasus MOF compiler.\n\n");
+ 
+   MessageLoaderParms parms(
+       "Compiler.cmdline.cimmof.cmdline.CIMMOFL_USAGE_WARNING",warn);
+@@ -112,26 +116,11 @@
+     //PEP167 change
+     String help;
+ #ifdef PEGASUS_OS_HPUX
+-    if(progtype == 1)
+-    {
+-        help.append("Usage: ").append("cimmofl");
+-    }
+-    else
+-    {
+-        help.append("Usage: ").append("cimmof ");
+-    }
++    help.append("Usage: ").append(arg0);
+     help.append( " -h | --help\n" );
+-
+-    if(progtype == 1)
+-        help.append("       cimmofl");
+-    else
+-        help.append("       cimmof ");
++    help.append("       " + arg0);
+     help.append(" --version\n");
+-
+-    if(progtype == 1)
+-        help.append("       cimmofl");
+-    else
+-        help.append("       cimmof ");
++    help.append("       " + arg0);
+     help.append( " [ -w ] [ -uc ] [ -aE | -aV | -aEV ] [ -I path ]\n");
+     help.append( "              [ -n namespace | --namespace namespace ]");
+     if(progtype == 1)
+@@ -167,22 +156,12 @@
+                                         " defaults to \"XML\"\n");
+     }
+ #else
+-    if(progtype == 1)
+-        help.append("Usage: ").append("cimmofl");
+-    else
+-        help.append("Usage: ").append("cimmof ");
++    help.append("Usage: ").append(arg0);
+     help.append( " -h | --help\n");
+-
+-    if(progtype == 1)
+-        help.append("       cimmofl");
+-    else
+-        help.append("       cimmof ");
++    help.append("       " + arg0);
+     help.append(" --version\n");
+ 
+-    if(progtype == 1)
+-        help.append("       cimmofl");
+-    else
+-        help.append("       cimmof ");
++    help.append("       " + arg0 + " ");
+     help.append( " [ -w ] [-E ] [ -uc ] [ -aE | -aV | -aEV ] [ -I path ]\n");
+     help.append( "               [ -n namespace | --namespace namespace ]"
+                                 " [ --xml ]\n");
+@@ -239,8 +218,10 @@
+     {
+         help.append(
+         "    -W                  - Suppress the usage warning (i.e., Warning:\n"
+-        "                          Use of cimmofl can corrupt the CIM Server\n"
+-        "                          Repository. cimmofl should only be used\n"
++        "                          Use of " + arg0 + 
++        " can corrupt the CIM Server\n"
++        "                          Repository. " + arg0 + 
++        " should only be used\n"
+         "                          under very controlled situations. cimmof\n"
+         "                          is the recommended OpenPegasus MOF\n"
+         "                          compiler.)\n");
+@@ -264,12 +245,13 @@
+ 
+     if(progtype == 1)
+     {
+-        help.append("\n\nWarning: Use of cimmofl can corrupt the CIM Server"
++        help.append("\n\nWarning: Use of " + arg0 + 
++        " can corrupt the CIM Server"
+                     " Repository.\n");
+-        help.append("         cimmofl should only be used under very"
++        help.append("         " + arg0 + " should only be used under very"
+                     " controlled situations.\n");
+-        help.append("         cimmof is the recommended OpenPegasus MOF"
+-                    " compiler.\n");
++        help.append("         " + String(PEGASUS_CIMMOF_PROGRAM_NAME) + 
++            " is the recommended OpenPegasus MOF compiler.\n");
+     }
+ 
+     // now localize the menu based on platform, use help as the default menu
+@@ -435,34 +417,18 @@
+ 
+ // This function looks at a string (which we suppose to be argv[0]
+ // and decides if it represents cimmof or cimmofl
+-Boolean isCimmoflCommandName(const char *name)
++Boolean isCimmoflCommandName(const char* name)
+ {
+-    const char *pos;
+-    const char *pos2;
+-    pos = strrchr(name, SEPCHAR);
+-    pos2 = strrchr(name, SEPCHAR2);
+-    pos = (pos2 > pos) ? pos2 : pos;
+-    if (!pos)
+-        pos = name;
+-    else
+-        pos++;
+-    // returns true in case of cimmofl
+-    // returns false in case first 6 letter are "cimmof" and no "l" follows
+-    // returns true in case anything else but "cimmof" or "cimmofl"
+-    if (*pos != 'c' && *pos != 'C') return true;
+-    pos++;
+-    if (*pos != 'i' && *pos != 'I') return true;
+-    pos++;
+-    if (*pos != 'm' && *pos != 'M') return true;
+-    pos++;
+-    if (*pos != 'm' && *pos != 'M') return true;
+-    pos++;
+-    if (*pos != 'o' && *pos != 'O') return true;
+-    pos++;
+-    if (*pos != 'f' && *pos != 'F') return true;
+-    pos++;
+-    if (*pos != 'l' && *pos != 'L') return false;
+-    return true;
++    // Strip leading path:
++    name = System::findBaseName(name);
++
++    if (!name)
++        return false;
++
++    arg0 = name;
++
++    // Return true if the cimmofl program name.
++    return System::strcasecmp(name, PEGASUS_CIMMOFL_PROGRAM_NAME) == 0;
+ }
+ 
+ extern "C++" int processCmdline(int, char **, mofCompilerOptions &, ostream&);
+Index: src/Pegasus/Config/ConfigManager.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Config/ConfigManager.cpp,v
+retrieving revision 1.107
+diff -u -r1.107 ConfigManager.cpp
+--- src/Pegasus/Config/ConfigManager.cpp	2 Dec 2008 09:01:24 -0000	1.107
++++ src/Pegasus/Config/ConfigManager.cpp	15 Dec 2008 22:07:07 -0000
+@@ -211,7 +211,11 @@
+ 
+ static struct FixedValueEntry _fixedValues[] =
+ {
+-#include "FixedPropertyTable.h"
++#if defined(PEGASUS_BUILD_SCX)
++# include "FixedPropertyTableSCX.h"
++#else
++# include "FixedPropertyTable.h"
++#endif
+ };
+ 
+ const Uint32 NUM_FIXED_PROPERTIES =
+Index: src/Pegasus/Config/DefaultPropertyOwner.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Config/DefaultPropertyOwner.cpp,v
+retrieving revision 1.37
+diff -u -r1.37 DefaultPropertyOwner.cpp
+--- src/Pegasus/Config/DefaultPropertyOwner.cpp	2 Dec 2008 09:01:24 -0000	1.37
++++ src/Pegasus/Config/DefaultPropertyOwner.cpp	15 Dec 2008 22:07:07 -0000
+@@ -58,7 +58,11 @@
+ 
+ static struct ConfigPropertyRow properties[] =
+ {
+-#include "DefaultPropertyTable.h"
++#if defined(PEGASUS_BUILD_SCX)
++# include "DefaultPropertyTableSCX.h"
++#else
++# include "DefaultPropertyTable.h"
++#endif
+ };
+ 
+ const Uint32 NUM_PROPERTIES = sizeof(properties) / sizeof(properties[0]);
+Index: src/Pegasus/Config/LogPropertyOwner.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Config/LogPropertyOwner.cpp,v
+retrieving revision 1.31
+diff -u -r1.31 LogPropertyOwner.cpp
+--- src/Pegasus/Config/LogPropertyOwner.cpp	2 Dec 2008 09:01:24 -0000	1.31
++++ src/Pegasus/Config/LogPropertyOwner.cpp	15 Dec 2008 22:07:07 -0000
+@@ -51,12 +51,18 @@
+ 
+ static struct ConfigPropertyRow properties[] =
+ {
++// SCX uses the same logLevel for all platforms.
++#if defined(PEGASUS_BUILD_SCX)
++    {"logLevel", "INFORMATION", IS_DYNAMIC, 0, 0, IS_VISIBLE},
++#endif
+ #if defined(PEGASUS_OS_ZOS) && defined(PEGASUS_USE_RELEASE_DIRS)
+ # if !defined(PEGASUS_USE_SYSLOGS)
+     {"logdir", "/var/wbem/logs", IS_DYNAMIC, 0, 0, IS_HIDDEN},
+     {"maxLogFileSizeKBytes", "32678", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+ # endif    
++# if !defined(PEGASUS_BUILD_SCX)
+     {"logLevel", "INFORMATION", IS_DYNAMIC, 0, 0, IS_VISIBLE} 
++# endif
+ #elif defined(PEGASUS_OS_PASE)
+ # if defined(PEGASUS_USE_RELEASE_CONFIG_OPTIONS)
+         {"logdir", "/QOpenSys/QIBM/UserData/UME/Pegasus/logs", IS_DYNAMIC, 
+@@ -66,21 +72,27 @@
+         {"logdir", "./logs", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+         {"maxLogFileSizeKBytes", "32678", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+ # endif
++# if !defined(PEGASUS_BUILD_SCX)
+     {"logLevel", "INFORMATION", IS_DYNAMIC, 0, 0, IS_VISIBLE}
++# endif
+ #else
+ # if defined(PEGASUS_USE_RELEASE_CONFIG_OPTIONS)
+ #  if !defined(PEGASUS_USE_SYSLOGS)
+     {"logdir", "./logs", IS_DYNAMIC, 0, 0, IS_HIDDEN},
+     {"maxLogFileSizeKBytes", "32678", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+ #  endif
++# if !defined(PEGASUS_BUILD_SCX)
+     {"logLevel", "SEVERE", IS_DYNAMIC, 0, 0, IS_HIDDEN}
++# endif
+ # else
+ #  if !defined(PEGASUS_USE_SYSLOGS)
+     {"logdir", "./logs", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+     {"maxLogFileSizeKBytes", "32678", IS_DYNAMIC, 0, 0, IS_VISIBLE},
+ #  endif
++# if !defined(PEGASUS_BUILD_SCX)
+     {"logLevel", "INFORMATION", IS_DYNAMIC, 0, 0, IS_VISIBLE}
+ # endif
++# endif
+ #endif
+ };
+ 
+Index: src/Pegasus/Config/SecurityPropertyOwner.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Config/SecurityPropertyOwner.cpp,v
+retrieving revision 1.67
+diff -u -r1.67 SecurityPropertyOwner.cpp
+--- src/Pegasus/Config/SecurityPropertyOwner.cpp	2 Dec 2008 09:01:24 -0000	1.67
++++ src/Pegasus/Config/SecurityPropertyOwner.cpp	15 Dec 2008 22:07:07 -0000
+@@ -93,7 +93,11 @@
+     {"enableRemotePrivilegedUserAccess", "true", IS_STATIC, 0, 0, IS_VISIBLE},
+     {"authorizedUserGroups", "", IS_STATIC, 0, 0, IS_VISIBLE},
+ #else // PEGASUS_OS_PASE
++# if defined(PEGASUS_BUILD_SCX)
++    {"enableAuthentication", "true", IS_STATIC, 0, 0, IS_VISIBLE},
++# else
+     {"enableAuthentication", "false", IS_STATIC, 0, 0, IS_VISIBLE},
++# endif
+     {"httpAuthType", "Basic", IS_STATIC, 0, 0, IS_VISIBLE},
+     {"passwordFilePath", "cimserver.passwd", IS_STATIC, 0, 0, IS_VISIBLE},
+ #ifdef PEGASUS_OS_HPUX
+Index: src/Pegasus/ManagedClient/CIMManagedClient.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ManagedClient/CIMManagedClient.cpp,v
+retrieving revision 1.14
+diff -u -r1.14 CIMManagedClient.cpp
+--- src/Pegasus/ManagedClient/CIMManagedClient.cpp	2 Dec 2008 09:01:44 -0000	1.14
++++ src/Pegasus/ManagedClient/CIMManagedClient.cpp	15 Dec 2008 22:07:07 -0000
+@@ -791,12 +791,11 @@
+         // lets determine if a connection for this object path available
+         targetCIMOM = _cccm->getConnection(_host, _port, _nameSpace);
+     }
+-    // damn, somehow we missed to construct a CIMClientRep for this connection
++    // Somehow we missed to construct a CIMClientRep for this connection
+     // shouldn't be possible at all, but one never knows everything
+     if (targetCIMOM == 0)
+     {
+-        // throw some crazy exception
+-        // TODO: invent exception
++        // Throw some exception, though it might not be the best exception.
+         MessageLoaderParms typeMismatchMessage = MessageLoaderParms(
+             "Client.CIMClientRep.TYPEMISMATCH_PORTMISMATCH",
+             "No valid CIMOM connection configured for: ($0:$1) ",
+Index: src/Pegasus/ProviderManager2/CMPI/CMPILocalProviderManager.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManager2/CMPI/CMPILocalProviderManager.cpp,v
+retrieving revision 1.61
+diff -u -r1.61 CMPILocalProviderManager.cpp
+--- src/Pegasus/ProviderManager2/CMPI/CMPILocalProviderManager.cpp	2 Dec 2008 09:01:49 -0000	1.61
++++ src/Pegasus/ProviderManager2/CMPI/CMPILocalProviderManager.cpp	15 Dec 2008 22:07:07 -0000
+@@ -35,6 +35,7 @@
+ #include <Pegasus/Common/Time.h>
+ #include <Pegasus/Common/Tracer.h>
+ #include <Pegasus/Common/PegasusVersion.h>
++#include <Pegasus/Common/Logger.h>
+ 
+ #include <Pegasus/Common/MessageLoader.h>
+ #include <Pegasus/Config/ConfigManager.h>
+@@ -933,6 +934,13 @@
+                 " error is: %s",
+                 (const char*)moduleFileName.getCString(),
+                 (const char*)exceptionMsg.getCString()));
++
++            Logger::put_l(Logger::ERROR_LOG, System::CIMSERVER, Logger::SEVERE,
++                MessageLoaderParms(
++                "ProviderManager.CMPI.CMPIProviderModule.WRONG_LIBRARY", 
++                "Provider is not a CMPI style provider. library $0, error $1",
++                moduleFileName, exceptionMsg));
++
+             deleteProvider =true;
+         }
+         catch (...)
+Index: src/Pegasus/ProviderManager2/CMPI/CMPI_BrokerEnc.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManager2/CMPI/CMPI_BrokerEnc.cpp,v
+retrieving revision 1.71
+diff -u -r1.71 CMPI_BrokerEnc.cpp
+--- src/Pegasus/ProviderManager2/CMPI/CMPI_BrokerEnc.cpp	2 Dec 2008 09:01:49 -0000	1.71
++++ src/Pegasus/ProviderManager2/CMPI/CMPI_BrokerEnc.cpp	15 Dec 2008 22:07:07 -0000
+@@ -64,6 +64,7 @@
+ #include <stdarg.h>
+ #include <string.h>
+ 
++
+ PEGASUS_USING_STD;
+ PEGASUS_NAMESPACE_BEGIN
+ 
+Index: src/Pegasus/ProviderManager2/CMPI/CMPI_Instance.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManager2/CMPI/CMPI_Instance.cpp,v
+retrieving revision 1.52
+diff -u -r1.52 CMPI_Instance.cpp
+--- src/Pegasus/ProviderManager2/CMPI/CMPI_Instance.cpp	2 Dec 2008 09:01:49 -0000	1.52
++++ src/Pegasus/ProviderManager2/CMPI/CMPI_Instance.cpp	15 Dec 2008 22:07:07 -0000
+@@ -44,6 +44,7 @@
+ #include <string.h>
+ #include <new>
+ #include <Pegasus/Common/Tracer.h>
++#include <Pegasus/Common/Logger.h>
+ 
+ PEGASUS_USING_STD;
+ PEGASUS_NAMESPACE_BEGIN
+@@ -309,6 +310,15 @@
+                            "Either the property is not part of the class or"
+                                "not part of the property list.",
+                        name));
++
++#if defined(PEGASUS_BUILD_SCX)
++
++            Logger::put(Logger::STANDARD_LOG, System::CIMSERVER, 
++                Logger::WARNING,
++                "Setting undefined property name: $0  Type: $1  on class: $2",
++                name, cimTypeToString(v.getType()), 
++                inst->getClassName().getString());
++#endif
+         }
+         PEG_METHOD_EXIT();
+         CMReturn(CMPI_RC_OK);
+Index: src/Pegasus/ProviderManager2/CMPI/CMPI_Wql2Dnf.h
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManager2/CMPI/CMPI_Wql2Dnf.h,v
+retrieving revision 1.17
+diff -u -r1.17 CMPI_Wql2Dnf.h
+--- src/Pegasus/ProviderManager2/CMPI/CMPI_Wql2Dnf.h	2 Dec 2008 09:01:49 -0000	1.17
++++ src/Pegasus/ProviderManager2/CMPI/CMPI_Wql2Dnf.h	15 Dec 2008 22:07:07 -0000
+@@ -124,8 +124,14 @@
+ 
+ typedef Array<TableauRow_WQL> Tableau_WQL;
+ 
++// SCX exports CMPI_Wql2Dnf for use by scxwql support.
++#if defined(PEGASUS_BUILD_SCX)
++# define PEGASUS_CMPI_WQL2DNF_LINKAGE PEGASUS_WQL_LINKAGE
++#else
++# define PEGASUS_CMPI_WQL2DNF_LINKAGE /* empty */
++#endif
+ 
+-class CMPI_Wql2Dnf
++class PEGASUS_CMPI_WQL2DNF_LINKAGE CMPI_Wql2Dnf
+ {
+ public:
+     CMPI_Wql2Dnf();
+Index: src/Pegasus/ProviderManagerService/ProviderAgent/ProviderAgent.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManagerService/ProviderAgent/ProviderAgent.cpp,v
+retrieving revision 1.22
+diff -u -r1.22 ProviderAgent.cpp
+--- src/Pegasus/ProviderManagerService/ProviderAgent/ProviderAgent.cpp	2 Dec 2008 09:02:05 -0000	1.22
++++ src/Pegasus/ProviderManagerService/ProviderAgent/ProviderAgent.cpp	15 Dec 2008 22:07:08 -0000
+@@ -118,6 +118,14 @@
+ 
+     _providerAgent = 0;
+ 
++#if defined(PEGASUS_BUILD_SCX) 
++# if defined(PEGASUS_PLATFORM_AIX_RS_IBMCXX) && defined(PEGASUS_OS_AIX5)
++    // workaround for "coredump-on-exit" problem. This is strictly AIX 5.3 
++    // specific. See WI 7241 for more details.
++    _exit(0);
++# endif
++#endif
++
+     PEG_METHOD_EXIT();
+ }
+ 
+Index: src/Pegasus/ProviderManagerService/ProviderAgent/cimprovagt.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/ProviderManagerService/ProviderAgent/cimprovagt.cpp,v
+retrieving revision 1.10
+diff -u -r1.10 cimprovagt.cpp
+--- src/Pegasus/ProviderManagerService/ProviderAgent/cimprovagt.cpp	2 Dec 2008 09:02:05 -0000	1.10
++++ src/Pegasus/ProviderManagerService/ProviderAgent/cimprovagt.cpp	15 Dec 2008 22:07:08 -0000
+@@ -37,6 +37,7 @@
+ #include <Pegasus/Common/System.h>
+ #include <Pegasus/Common/LanguageParser.h>
+ #include <Pegasus/Common/PegasusVersion.h>
++#include <Pegasus/Common/System.h>
+ #include <Pegasus/ProviderManagerService/ProviderAgent/ProviderAgent.h>
+ 
+ #if defined(PEGASUS_OS_TYPE_UNIX)
+@@ -53,10 +54,13 @@
+ PEGASUS_USING_STD;
+ PEGASUS_USING_PEGASUS;
+ 
++// Program name without leading path.
++static const char* arg0;
++
+ void usage()
+ {
+-    cerr << "cimprovagt is an internal program used by cimserver." << endl;
+-    cerr << "cimprovagt should not be invoked directly." << endl;
++    cerr << arg0 << " is an internal program used by cimserver." << endl;
++    cerr << arg0 << " should not be invoked directly." << endl;
+ }
+ 
+ int setUserContext(int argc, char* argv[])
+@@ -134,6 +138,8 @@
+ 
+ int main(int argc, char* argv[])
+ {
++    arg0 = System::findBaseName(argv[0]);
++
+     // Usage: cimprovagt ( 0 | 1 ) <input_pipe> <output_pipe> <user_name> <id>
+ 
+     //
+Index: src/Pegasus/Security/Authentication/PAMBasicAuthenticator.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Security/Authentication/PAMBasicAuthenticator.cpp,v
+retrieving revision 1.17
+diff -u -r1.17 PAMBasicAuthenticator.cpp
+--- src/Pegasus/Security/Authentication/PAMBasicAuthenticator.cpp	2 Dec 2008 09:02:13 -0000	1.17
++++ src/Pegasus/Security/Authentication/PAMBasicAuthenticator.cpp	15 Dec 2008 22:07:08 -0000
+@@ -44,6 +44,8 @@
+ #  include "PAMBasicAuthenticatorUnix.cpp"
+ # elif defined(PEGASUS_OS_SOLARIS)
+ #  include "PAMBasicAuthenticatorUnix.cpp"
++# elif defined(PEGASUS_OS_DARWIN)
++#  include "PAMBasicAuthenticatorUnix.cpp"
+ # else
+ #  include "PAMBasicAuthenticatorStub.cpp"
+ # endif
+Index: src/Pegasus/Server/QuerySupportRouter.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Server/QuerySupportRouter.cpp,v
+retrieving revision 1.7
+diff -u -r1.7 QuerySupportRouter.cpp
+--- src/Pegasus/Server/QuerySupportRouter.cpp	2 Dec 2008 09:02:17 -0000	1.7
++++ src/Pegasus/Server/QuerySupportRouter.cpp	15 Dec 2008 22:07:08 -0000
+@@ -42,6 +42,16 @@
+     CIMOperationRequestDispatcher* opThis,
+     CIMExecQueryRequestMessage* msg)
+ {
++#if defined(PEGASUS_BUILD_SCX)
++    if (msg->queryLanguage == "DMTF:CQL")
++    {
++        // Fix to make it possible to refer to DMTF:CQL in OpsMgr MP:s
++        // Replace this code when CQL is properly implemented (SCX WI 2218)
++        ((WQLOperationRequestDispatcher*)opThis)->handleQueryRequest(msg);
++        return true;
++    }
++#endif
++
+     if (msg->queryLanguage=="WQL")
+         ((WQLOperationRequestDispatcher*)opThis)->handleQueryRequest(msg);
+     else return false;
+Index: src/Pegasus/Server/WQLOperationRequestDispatcher.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/Server/WQLOperationRequestDispatcher.cpp,v
+retrieving revision 1.38
+diff -u -r1.38 WQLOperationRequestDispatcher.cpp
+--- src/Pegasus/Server/WQLOperationRequestDispatcher.cpp	2 Dec 2008 09:02:17 -0000	1.38
++++ src/Pegasus/Server/WQLOperationRequestDispatcher.cpp	15 Dec 2008 22:07:08 -0000
+@@ -210,7 +210,11 @@
+     CIMException cimException;
+     CIMName className;
+ 
++#if defined(PEGASUS_BUILD_SCX)
++    if (request->queryLanguage != "WQL" && request->queryLanguage != "DMTF:CQL")
++#else
+     if (request->queryLanguage!="WQL")
++#endif
+     {
+         cimException = PEGASUS_CIM_EXCEPTION(
+             CIM_ERR_QUERY_LANGUAGE_NOT_SUPPORTED, request->queryLanguage);
+Index: src/Pegasus/msg/Server/pegasusServer_en.txt
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Pegasus/msg/Server/pegasusServer_en.txt,v
+retrieving revision 1.243
+diff -u -r1.243 pegasusServer_en.txt
+--- src/Pegasus/msg/Server/pegasusServer_en.txt	4 Dec 2008 18:55:59 -0000	1.243
++++ src/Pegasus/msg/Server/pegasusServer_en.txt	15 Dec 2008 22:07:09 -0000
+@@ -3640,7 +3640,7 @@
+         *    and ends with a newline character (\n).
+         */
+         src.Server.cimserver.MENU.STANDARD:string {
+-        " Usage: cimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
++        " Usage: scxcimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
+         "  options\n"
+         "    -v, --version   - Display CIM server version number.\n"
+         "    -h, --help      - Print this help message.\n"
+@@ -3659,7 +3659,7 @@
+         *    and ends with a newline character (\n).
+         */
+         src.Server.cimserver.MENU.HPUXLINUXIA64GNU:string {
+-        " Usage: cimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
++        " Usage: scxcimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
+         "  options\n"
+         "    -v, --version   - Display CIM server version number.\n"
+         "    -h, --help      - Print this help message.\n"
+@@ -3677,7 +3677,7 @@
+         *    and ends with a newline character (\n).
+         */
+         src.Server.cimserver.MENU.WINDOWS:string {
+-        " Usage: cimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
++        " Usage: scxcimserver [ [ options ] | [ configProperty=value, ... ] ]\n"
+         "  options\n"
+         "    -v, --version   - Display CIM server version number.\n"
+         "    -h, --help      - Print this help message.\n"
+Index: src/Providers/ManagedSystem/OperatingSystem/tests/OSTestClient/OSTestClient_Solaris.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Providers/ManagedSystem/OperatingSystem/tests/OSTestClient/OSTestClient_Solaris.cpp,v
+retrieving revision 1.5
+diff -u -r1.5 OSTestClient_Solaris.cpp
+--- src/Providers/ManagedSystem/OperatingSystem/tests/OSTestClient/OSTestClient_Solaris.cpp	2 Dec 2008 09:02:32 -0000	1.5
++++ src/Providers/ManagedSystem/OperatingSystem/tests/OSTestClient/OSTestClient_Solaris.cpp	15 Dec 2008 22:07:09 -0000
+@@ -570,7 +570,7 @@
+ 
+    // arbitrary choice of valid delta - typically ran within
+    // 2048, but with many client connections, went as high as
+-   // 36,000+.  Thus chose 2^16 = 65536 (still helps weed out
++   // 36,000+.  Thus chose 2^16 = 65536 (still helps eliminate
+    // garbage values).
+    return (delta < 65536);
+ }
+Index: src/Server/cimserver.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Server/cimserver.cpp,v
+retrieving revision 1.227
+diff -u -r1.227 cimserver.cpp
+--- src/Server/cimserver.cpp	2 Dec 2008 09:02:57 -0000	1.227
++++ src/Server/cimserver.cpp	15 Dec 2008 22:07:09 -0000
+@@ -115,7 +115,7 @@
+ #ifdef PEGASUS_ENABLE_PRIVILEGE_SEPARATION
+ # define PEGASUS_PROCESS_NAME "cimservermain"
+ #else
+-# define PEGASUS_PROCESS_NAME "cimserver"
++# define PEGASUS_PROCESS_NAME PEGASUS_SERVER_PROCESS_NAME
+ #endif
+ 
+ #include <Pegasus/Common/Executor.h>
+@@ -208,7 +208,7 @@
+ //
+ //  The command name.
+ //
+-static const char COMMAND_NAME []    = "cimserver";
++static const char COMMAND_NAME []    = PEGASUS_SERVER_PROCESS_NAME;
+ 
+ //
+ //  The constant defining usage string.
+@@ -1131,7 +1131,11 @@
+         }
+ 
+ #if defined(PEGASUS_DEBUG)
++        // SCX: using cout on rhel4 after parent already exited causes race
++        // condition.
++# if !defined(PEGASUS_BUILD_SCX)
+         cout << "Started. " << endl;
++# endif
+ #endif
+ 
+         // Put server started message to the logger
+Index: src/Service/ServerRunStatus.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Service/ServerRunStatus.cpp,v
+retrieving revision 1.10
+diff -u -r1.10 ServerRunStatus.cpp
+--- src/Service/ServerRunStatus.cpp	2 Dec 2008 09:02:57 -0000	1.10
++++ src/Service/ServerRunStatus.cpp	15 Dec 2008 22:07:09 -0000
+@@ -54,8 +54,11 @@
+ // AIX version 5 does not define getprocs() in procinfo.h
+ extern "C"
+ {
++// This is already defined and slightly different on AIX6.
++#if !defined(PEGASUS_OS_AIX6)
+     extern int getprocs(
+         struct procsinfo *, int, struct fdsinfo *, int,pid_t *,int);
++#endif
+ }
+ # endif
+ #endif
+Index: src/Shutdown/cimshutdown.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/Shutdown/cimshutdown.cpp,v
+retrieving revision 1.5
+diff -u -r1.5 cimshutdown.cpp
+--- src/Shutdown/cimshutdown.cpp	2 Dec 2008 09:02:58 -0000	1.5
++++ src/Shutdown/cimshutdown.cpp	15 Dec 2008 22:07:09 -0000
+@@ -38,7 +38,7 @@
+ #ifdef PEGASUS_ENABLE_PRIVILEGE_SEPARATION
+ # define PEGASUS_PROCESS_NAME "cimservermain"
+ #else
+-# define PEGASUS_PROCESS_NAME "cimserver"
++# define PEGASUS_PROCESS_NAME PEGASUS_SERVER_PROCESS_NAME
+ #endif
+ 
+ PEGASUS_USING_PEGASUS;
+Index: src/WMIMapper/WMIProvider/WMIValue.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/WMIMapper/WMIProvider/WMIValue.cpp,v
+retrieving revision 1.18
+diff -u -r1.18 WMIValue.cpp
+--- src/WMIMapper/WMIProvider/WMIValue.cpp	5 Dec 2008 10:21:30 -0000	1.18
++++ src/WMIMapper/WMIProvider/WMIValue.cpp	15 Dec 2008 22:07:09 -0000
+@@ -370,7 +370,7 @@
+     switch (vt)
+     {
+         case VT_I2:
+-            // have to screw around here because automation type
++            // have to work around here because automation type
+             // is not necessarily the mof type...
+             if (CIM_SINT8 == Type)
+             {
+Index: src/slp/slp_client/src/cmd-utils/slp_client/slp_client.cpp
+===================================================================
+RCS file: /cvs/MSB/pegasus/src/slp/slp_client/src/cmd-utils/slp_client/slp_client.cpp,v
+retrieving revision 1.47
+diff -u -r1.47 slp_client.cpp
+--- src/slp/slp_client/src/cmd-utils/slp_client/slp_client.cpp	9 Dec 2008 12:33:18 -0000	1.47
++++ src/slp/slp_client/src/cmd-utils/slp_client/slp_client.cpp	15 Dec 2008 22:07:10 -0000
+@@ -7186,7 +7186,7 @@
+     "Custer is a h?ll of a d**n*ed fo*\\; -- Phil Sheridan",
+     "See Mug, See",
+     "management-hardware.[ih][ba][ml]",
+-    "The telephone is [hlr]eap [bds]ig medicine -- Crazy Horse",
++    "The telephone is [hlr]eap [bds]ig medicine -- Fast Horse",
+     "Young kids today are [A-z]ool",
+     "Young kids today are [A-z]ool"
+ };
+@@ -7197,7 +7197,7 @@
+     "custer is a hill of a dinged fog; -- Phil Sheridan",
+     "see mug, see",
+     "management-Hardware.HAL",
+-    "the telephone is leap dig medicine -- Crazy Horse",
++    "the telephone is leap dig medicine -- Fast Horse",
+     "young kids today are cool",
+     "young kids today are fool"
+ };

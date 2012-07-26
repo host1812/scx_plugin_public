@@ -1,0 +1,20 @@
+# -*- mode: Makefile; -*-
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+# 
+# Definition of all unit tests for the provider support library
+#
+#--------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------
+# Provider support library tests
+POSIX_UNITTESTS_PROVSUPLIB_SRCFILES = \
+	$(SCX_UNITTEST_ROOT)/provsup_lib/cmpibase_test.cpp \
+	$(SCX_UNITTEST_ROOT)/provsup_lib/scxprovidercapabilities_test.cpp \
+	$(SCX_UNITTEST_ROOT)/provsup_lib/scxinstance_test.cpp \
+	$(SCX_UNITTEST_ROOT)/provsup_lib/scxproperty_test.cpp \
+
+#-------------------------------- End of File -----------------------------------
+

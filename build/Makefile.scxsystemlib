@@ -1,0 +1,58 @@
+# -*- mode: Makefile; -*- 
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+
+#================================================================================
+# Static Libraries
+#================================================================================
+
+#--------------------------------------------------------------------------------
+# System PAL Library
+
+SYSTEMLIB_ROOT=$(SCX_SRC_ROOT)/shared/scxsystemlib
+
+STATIC_SYSTEMPALLIB_SRCFILES = \
+	$(SYSTEMLIB_ROOT)/common/entityinstance.cpp \
+	$(SYSTEMLIB_ROOT)/common/scxkstat.cpp \
+	$(SYSTEMLIB_ROOT)/common/scxodm.cpp \
+	$(SYSTEMLIB_ROOT)/common/scxostypeinfo.cpp \
+	$(SYSTEMLIB_ROOT)/common/scxsysteminfo.cpp \
+
+ifneq ($(SCX_STACK_ONLY), true)     # For a full agent, also include these:
+STATIC_SYSTEMPALLIB_SRCFILES += \
+	$(SYSTEMLIB_ROOT)/networkinterface/networkinterfaceenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/networkinterface/networkinterfaceinstance.cpp \
+	$(SYSTEMLIB_ROOT)/cpu/cpuenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/cpu/cpuinstance.cpp \
+	$(SYSTEMLIB_ROOT)/networkinterface/networkinterface.cpp \
+	$(SYSTEMLIB_ROOT)/memory/memoryenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/memory/memoryinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/diskdepend.cpp \
+	$(SYSTEMLIB_ROOT)/disk/staticlogicaldiskenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/disk/staticlogicaldiskinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/staticphysicaldiskenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/disk/staticphysicaldiskinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/statisticallogicaldiskenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/disk/statisticallogicaldiskinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/statisticalphysicaldiskenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/disk/statisticalphysicaldiskinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/statisticaldiskinstance.cpp \
+	$(SYSTEMLIB_ROOT)/disk/scxraid.cpp \
+	$(SYSTEMLIB_ROOT)/disk/scxlvmtab.cpp \
+	$(SYSTEMLIB_ROOT)/os/osenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/os/osinstance.cpp \
+	$(SYSTEMLIB_ROOT)/process/processenumeration.cpp \
+	$(SYSTEMLIB_ROOT)/process/processinstance.cpp \
+
+endif
+
+ifeq ($(PF),Linux)
+	STATIC_SYSTEMPALLIB_SRCFILES += $(SYSTEMLIB_ROOT)/disk/scxlvmutils.cpp
+endif
+
+STATIC_SYSTEMPALLIB_OBJFILES = $(call src_to_obj,$(STATIC_SYSTEMPALLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libpalsystem.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_SYSTEMPALLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+

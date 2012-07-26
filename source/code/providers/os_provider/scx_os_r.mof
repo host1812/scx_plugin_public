@@ -1,0 +1,21 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   Name = "SCX_OSProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_OSProvider";
+   CapabilityID = "SCX_OperatingSystem";
+   ClassName = "SCX_OperatingSystem";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2 }; // Instance
+   SupportedProperties = NULL; // All properties
+   SupportedMethods = NULL; // All methods
+};

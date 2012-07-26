@@ -1,0 +1,158 @@
+# -*- mode: Makefile; -*-
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+# 
+# Platform-specific overrides to the general POSIX platform file
+# 
+#--------------------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------------
+# Check Major version
+#--------------------------------------------------------------------------------
+
+CHECK_SUSE=$(shell if [ -e /etc/SuSE-release ]; then echo 1; fi)
+CHECK_RHEL=$(shell if [ -e /etc/redhat-release ]; then echo 1; fi)
+CHECK_UBUNTU=$(shell if [ -e /etc/lsb-release ]; then echo 1; fi)
+
+# On Ubuntu, the /etc/lsb-release file has what we need.  But this file is on
+# other platforms as well!  For now, check first for Ubuntu, allow further
+# checks to override.  This seems to work on all our platforms.
+ifeq ($(CHECK_UBUNTU),1)
+	PF_DISTRO=UBUNTU
+	PF_MAJOR=$(shell grep DISTRIB_RELEASE /etc/lsb-release | sed 's/.*=\([0-9]*\)[\.].*/\1/')
+	PF_MINOR=$(shell grep DISTRIB_RELEASE /etc/lsb-release | sed 's/.*=.*[\.]\(.*\)/\1/')
+endif
+
+# scripts below extrac version information from corresponding "release" file,
+# assuming version can be found as "<space><Major>[.<Minor>]";
+# if minor is not set, "0" is returned
+ifeq ($(CHECK_SUSE),1)
+	PF_DISTRO=SUSE
+	PF_MAJOR=$(shell head -n 1 /etc/SuSE-release | sed 's/.* \([0-9][0-9]*\)[ \.].*/\1/')
+	PF_MINOR=$(shell (head -n 1 /etc/SuSE-release | sed 's/.* [0-9][0-9]*[\.]\([0-9][0-9]*\).*/\1/') | grep -v '[^0-9]' || echo '0')
+endif
+
+ifeq ($(CHECK_RHEL),1)
+	PF_DISTRO=REDHAT
+	PF_MAJOR=$(shell head -n 1 /etc/redhat-release | sed 's/.* \([0-9][0-9]*\)[ \.].*/\1/')
+	PF_MINOR=$(shell (head -n 1 /etc/redhat-release | sed 's/.* [0-9][0-9]*[\.]\([0-9][0-9]*\).*/\1/') | grep -v '[^0-9]' || echo '0')
+endif
+
+# Catchall
+ifeq (,$(PF_DISTRO))
+	VERSTRING=UNKNOWN
+	PF_DISTRO=UNKNOWN
+	PF_MAJOR=UNKNOWN
+	PF_MINOR=UNKNOWN
+	$(warning "Unmatched version string")
+endif
+
+#--------------------------------------------------------------------------------
+# Check architecture
+#--------------------------------------------------------------------------------
+
+ifeq ($(PF_DISTRO),UBUNTU)
+	# On Ubuntu, 'uname -p' doesn't seem to work - use 'uname -m' instead
+	UNAME_P=$(shell uname -m)
+else
+UNAME_P=$(shell uname -p)
+endif
+
+ifneq (,$(findstring 64,$(UNAME_P)))
+	PF_ARCH=x64
+	ARCH=x64
+else
+ifneq (,$(findstring 86,$(UNAME_P)))
+	PF_ARCH=x86
+	ARCH=ia32
+else
+	ifneq (,$(findstring athlon,$(UNAME_P)))
+		PF_ARCH=x86
+		ARCH=ia32
+	else
+		PF_ARCH=UNKNOWN
+	endif
+endif
+endif
+
+ifeq ($(PF_DISTRO)$(PF_MAJOR),REDHAT4)
+	include Makefile.gcc3
+else
+	include Makefile.gcc4
+endif		
+
+#--------------------------------------------------------------------------------
+# Build width
+#--------------------------------------------------------------------------------
+ifeq ($(PF_ARCH),x86)
+	PF_WIDTH=32
+else
+	PF_WIDTH=64
+endif
+
+#--------------------------------------------------------------------------------
+# Paths
+#--------------------------------------------------------------------------------
+
+# Path to where the CPPUNIT libraries are checked in 
+CPPUNIT_LIB_PATH=$(TST_EXT_LIB_DIR)/linux/$(ARCH)/cppunit
+
+#--------------------------------------------------------------------------------
+# Tools on this platform
+#--------------------------------------------------------------------------------
+
+# Link a dynamic lib 
+LINK_DYNLIB=g++ -shared -Wl,-rpath,/usr/lib
+ifeq ($(PF_ARCH),x86)
+	LINK_DYNLIB+= -m32 
+else
+	LINK_DYNLIB+= -m64 
+endif
+LINK_DYNLIB+= -L$(INTERMEDIATE_DIR)
+
+#--------------------------------------------------------------------------------
+# Link switches for this platform, per target
+#--------------------------------------------------------------------------------
+
+LDFLAGS_DYNLIB = -ldl -lpthread -lcrypt -lrt
+LDFLAGS_EXECUTABLE = -ldl -lpthread -lrt
+
+ifeq ($(PF_DISTRO),SUSE)
+	ifeq ($(PF_MAJOR),9)
+	else
+		LDFLAGS_EXECUTABLE += -pie
+	endif
+endif
+
+# The Core Provider Module links with these 
+LDFLAGS_COREPROVIDERMODULE = $(LDFLAGS_DYNLIB)
+
+# The Test Provider Module links with these
+LDFLAGS_TESTPROVIDERMODULE = $(LDFLAGS_DYNLIB)
+
+# Core Provider specific link flags. Used to hide symbols
+COREPROVIDERMODULE_EXTRA_LINKFLAGS=-Wl,--version-script=$(INTERMEDIATE_DIR)/coreprovider.map
+
+# Test Provider specific link flags. Used to hide symbols
+TESTPROVIDERMODULE_EXTRA_LINKFLAGS=-Wl,--version-script=$(INTERMEDIATE_DIR)/testprovider.map
+
+# The testrunner links with these
+LDFLAGS_TESTRUNNER = $(LDFLAGS_EXECUTABLE)   
+
+# Transforms a list of symbols that should be exposed to the correct link flags
+get_ld_flags_for_retaining_symbols=$(addprefix -u, $(1))
+
+# Run pkg-config to get ssl library switches for this platform
+SSL_LIBS = `pkg-config --libs openssl`
+
+#--------------------------------------------------------------------------------
+# Compiler switch tweaks
+#--------------------------------------------------------------------------------
+
+CXXFLAGS+=
+
+
+#-------------------------------- End of File -----------------------------------

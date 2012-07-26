@@ -1,0 +1,37 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_ProviderModule 
+{
+   Name = "SCXCoreProviderModule";
+   Location = "SCXCoreProviderModule";  // Becomes libSCXCoreProviderModule.so
+   Vendor = "Microsoft Corp.";
+   Version = "0.0.1";
+   InterfaceType = "CMPI";
+   InterfaceVersion = "2.0.0";
+};
+
+instance of PG_ProviderModule
+{
+   Name = "SCXUserCoreProviderModule";
+   Location = "SCXCoreProviderModule";  // Becomes libSCXCoreProviderModule.so
+   Vendor = "Microsoft Corp.";
+   Version = "0.0.1";
+   InterfaceType = "CMPI";
+   InterfaceVersion = "2.0.0";
+   UserContext="2";
+   DesignatedUserContext = NULL;
+};
+
+#pragma include("network_provider/scx_network_r.mof") 
+#pragma include("cpu_provider/scx_cpu_r.mof")           // CapabilityID = 1
+#pragma include("memory_provider/scx_memory_r.mof")     // CapabilityID = 2
+#pragma include("disk_provider/scx_disk_r.mof")         // CapabilityID = 3 & 4
+#pragma include("process_provider/scx_process_r.mof")   // CapabilityID = 5 & 6
+#pragma include("runas_provider/scx_runas_r.mof")       // CapabilityID = 7
+#pragma include("logfile_provider/scx_logfile_r.mof")   // CapabilityID = 8 & 9
+#pragma include("meta_provider/scx_meta_r.mof")         // CapabilityID = 10
+#pragma include("appserver_provider/scx_as_r.mof")      // CapabilityID = 11
+#pragma include("os_provider/scx_os_r.mof")
+

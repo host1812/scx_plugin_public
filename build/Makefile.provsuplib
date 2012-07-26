@@ -1,0 +1,47 @@
+# -*- mode: Makefile; -*- 
+#--------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#--------------------------------------------------------------------------------
+# 2007-08-23
+#--------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------
+# Test Provider
+
+STATIC_TESTPROVIDERLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/shared/scxsystemlib/common/entityinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/testprovider/testenumeration.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/testprovider/testinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/testprovider/testprovider.cpp \
+
+STATIC_TESTPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_TESTPROVIDERLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libtestprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_TESTPROVIDERLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+
+#--------------------------------------------------------------------------------
+# Provider Support Library
+
+STATIC_PROVSUPLIB_SRCFILES = \
+	$(SCX_SRC_ROOT)/provsup_lib/cmpibase.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxproperty.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxinstancecollection.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxprovidercapabilities.cpp \
+
+ifneq ($(SCX_STACK_ONLY), true)      # For a full agent, also include these:
+STATIC_PROVSUPLIB_SRCFILES += \
+	$(SCX_SRC_ROOT)/provsup_lib/condition.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/predicate.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxwqlselectstatement.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/scxwqlselectstatementcmpi.cpp \
+
+endif
+
+STATIC_PROVSUPLIB_OBJFILES = $(call src_to_obj,$(STATIC_PROVSUPLIB_SRCFILES))
+
+$(INTERMEDIATE_DIR)/libprovidersupport.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_PROVSUPLIB_OBJFILES)
+	$(LINK_STATLIB) $(LINK_STATLIB_OUTFLAG) $^
+
+#-------------------------------- End of File -----------------------------------

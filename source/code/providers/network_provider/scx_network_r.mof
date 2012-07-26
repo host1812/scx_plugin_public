@@ -1,0 +1,34 @@
+// ===================================================================
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ===================================================================
+
+instance of PG_Provider 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   Name = "SCX_NetworkProvider";
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_NetworkProvider";
+   CapabilityID = "SCX_IPProtocolEndpoint";
+   ClassName = "SCX_IPProtocolEndpoint";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2 }; // Instance
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+
+instance of PG_ProviderCapabilities 
+{
+   ProviderModuleName = "SCXCoreProviderModule";
+   ProviderName = "SCX_NetworkProvider";
+   CapabilityID = "SCX_EthernetPortStatistics";
+   ClassName = "SCX_EthernetPortStatistics";
+   Namespaces = {"root/scx"};
+   ProviderType = { 2 }; // Instance
+   SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
+   SupportedMethods = NULL; // All methods
+};
+

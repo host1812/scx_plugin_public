@@ -32,7 +32,7 @@ namespace SCXSystemLib
     */
     class TestInstance : public EntityInstance
     {
-        friend class TestEnumeration;
+        friend class WkEnumeration;
 
     public:
 
@@ -53,7 +53,7 @@ namespace SCXSystemLib
 
     private:
         // These are called by concrete subclass of EntityEnumeration through 
-        // friendship, i.e. TestEnumeration
+        // friendship, i.e. WkEnumeration
         void UpdateValueA(unsigned int aValue);
         void UpdateValueB(unsigned int bValue);
         void UpdateValueD();

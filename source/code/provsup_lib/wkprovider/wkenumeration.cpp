@@ -31,20 +31,20 @@ namespace SCXSystemLib
     /**
         Default constructor
     */
-    TestEnumeration::TestEnumeration() : EntityEnumeration<TestInstance>()
+    WkEnumeration::WkEnumeration() : EntityEnumeration<TestInstance>()
     {
-        m_log = SCXLogHandleFactory::GetLogHandle(L"scx.core.common.pal.system.test.testenumeration");    
+        m_log = SCXLogHandleFactory::GetLogHandle(L"scx.core.common.pal.system.test.WkEnumeration");    
 
-        SCX_LOGTRACE(m_log, L"TestEnumeration default constructor");
+        SCX_LOGTRACE(m_log, L"WkEnumeration default constructor");
     }
 
     /*----------------------------------------------------------------------------*/
     /**
         Create Test instances
     */
-    void TestEnumeration::Init()
+    void WkEnumeration::Init()
     {
-        SCX_LOGTRACE(m_log, L"TestEnumeration Init()");
+        SCX_LOGTRACE(m_log, L"WkEnumeration Init()");
 
         SetTotalInstance(SCXHandle<TestInstance>(new TestInstance(0, true)));
 
@@ -58,18 +58,18 @@ namespace SCXSystemLib
         Throws: SCXInternalErrorException - If any instance is not a TestInstance
 
     */
-    void TestEnumeration::Update(bool updateInstances)
+    void WkEnumeration::Update(bool updateInstances)
     {
         size_t count = 5;
 
-        SCX_LOGTRACE(m_log, StrAppend(StrAppend(L"TestEnumeration Update() - ", updateInstances).append(L" - "), count));
+        SCX_LOGTRACE(m_log, StrAppend(StrAppend(L"WkEnumeration Update() - ", updateInstances).append(L" - "), count));
 
         // add items if needed (i.e. currently empty)
         if (0 == Size())
         {
             for (size_t i=Size(); i<count; i++)
             {
-                SCX_LOGTRACE(m_log, StrAppend(L"TestEnumeration Update() - Adding Test ", i));
+                SCX_LOGTRACE(m_log, StrAppend(L"WkEnumeration Update() - Adding Test ", i));
                 AddInstance(SCXHandle<TestInstance>(new TestInstance(i)));
             }
         }
@@ -98,7 +98,7 @@ namespace SCXSystemLib
         Creates a new instance.
         returns the created instance.
     */
-    SCXHandle<TestInstance> TestEnumeration::Create(unsigned int instanceNumber)
+    SCXHandle<TestInstance> WkEnumeration::Create(unsigned int instanceNumber)
     {
         SCXHandle<TestInstance> inst(new TestInstance(instanceNumber));
         AddInstance(inst);

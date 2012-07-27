@@ -50,7 +50,7 @@ namespace SCXCore {
     {
         SCX_LOGTRACE(m_log, L"SCXTestProvider default constructor");
 
-        m_TestItems = new TestEnumeration();
+        m_TestItems = new WkEnumeration();
         m_TestItems->Init();
     }
 
@@ -76,7 +76,7 @@ namespace SCXCore {
     */
     void SCXTestProvider::DoInit()
     {
-        m_ProviderCapabilities.RegisterCimClass(eSCX_Test1, L"SCX_Test1");
+        m_ProviderCapabilities.RegisterCimClass(eSCX_Test1, L"SCX_Wk1");
         m_ProviderCapabilities.RegisterCimMethod(eSCX_Test1, eSomeMethod,  L"SomeMethod");
         m_ProviderCapabilities.RegisterCimMethod(eSCX_Test1, eOtherMethod, L"OtherMethod");
 

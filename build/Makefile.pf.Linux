@@ -133,7 +133,7 @@ LDFLAGS_COREPROVIDERMODULE = $(LDFLAGS_DYNLIB)
 # The Test Provider Module links with these
 LDFLAGS_TESTPROVIDERMODULE = $(LDFLAGS_DYNLIB)
 
-# The Test Provider Module links with these
+# The WK Provider Module links with these
 LDFLAGS_WKPROVIDERMODULE = $(LDFLAGS_DYNLIB)
 
 # Core Provider specific link flags. Used to hide symbols

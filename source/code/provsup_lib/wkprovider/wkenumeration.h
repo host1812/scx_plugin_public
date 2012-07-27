@@ -10,8 +10,8 @@
     
 */
 /*----------------------------------------------------------------------------*/
-#ifndef TESTENUMERATION_H
-#define TESTENUMERATION_H
+#ifndef WkEnumeration_H
+#define WkEnumeration_H
 
 #include <scxsystemlib/entityenumeration.h>
 #include /*<scxsystemlib/ */<wkinstance.h>
@@ -25,11 +25,11 @@ namespace SCXSystemLib
         
         PAL Holding collection of Test:s.
     */
-    class TestEnumeration : public EntityEnumeration<TestInstance>
+    class WkEnumeration : public EntityEnumeration<TestInstance>
     {
     public:
 
-        TestEnumeration();
+        WkEnumeration();
         virtual void Init();
         virtual void Update(bool updateInstances=true);
 
@@ -42,5 +42,5 @@ namespace SCXSystemLib
 
 }
 
-#endif /* TESTENUMERATION_H */
+#endif /* WkEnumeration_H */
 /*----------------------------E-N-D---O-F---F-I-L-E---------------------------*/

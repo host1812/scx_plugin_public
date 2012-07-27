@@ -35,7 +35,7 @@ instance of PG_ProviderCapabilities
    ProviderModuleName = "SCXWkProviderModule";
    ProviderName = "SCX_TestProvider";
    CapabilityID = "2";
-   ClassName = "SCX_Wk2";
+   ClassName = "SCX_Test2";
    Namespaces = {"root/scx"};
    ProviderType = { 2, 5, 7 }; // Instance, Method, Query
    SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...

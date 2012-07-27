@@ -91,7 +91,7 @@ namespace SCXCore
         SCXCoreLib::SCXHandle<SCXSystemLib::TestInstance> FindInstance(const SCXProviderLib::SCXInstance& keys) const;
 
         //! PAL implementation retrieving CPU information for local host
-        SCXSystemLib::TestEnumeration* m_TestItems;
+        SCXSystemLib::WkEnumeration* m_TestItems;
     };
 }
 

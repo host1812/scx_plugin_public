@@ -24,9 +24,9 @@ $(INTERMEDIATE_DIR)/libtestprovider.$(PF_STAT_LIB_FILE_SUFFIX) : $(STATIC_TESTPR
 
 STATIC_WKPROVIDERLIB_SRCFILES = \
 	$(SCX_SRC_ROOT)/shared/scxsystemlib/common/entityinstance.cpp \
-	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testenumeration.cpp \
-	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testinstance.cpp \
-	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/testprovider.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/wkenumeration.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/wkinstance.cpp \
+	$(SCX_SRC_ROOT)/provsup_lib/wkprovider/wkprovider.cpp \
 
 STATIC_WKPROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_WKPROVIDERLIB_SRCFILES))
 

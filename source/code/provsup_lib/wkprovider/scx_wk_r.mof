@@ -4,8 +4,8 @@
 
 instance of PG_ProviderModule 
 {
-   Name = "SCXTestProviderModule";
-   Location = "SCXTestProviderModule";  // Becomes libSCXTestProviderModule.so
+   Name = "SCXWkProviderModule";
+   Location = "SCXWkProviderModule";  // Becomes libSCXWkProviderModule.so
    Vendor = "Microsoft Corp.";
    Version = "0.0.1";
    InterfaceType = "CMPI";
@@ -14,16 +14,16 @@ instance of PG_ProviderModule
  
 instance of PG_Provider 
 {
-   ProviderModuleName = "SCXTestProviderModule";
+   ProviderModuleName = "SCXWkProviderModule";
    Name = "SCX_TestProvider";
 };
 
 instance of PG_ProviderCapabilities 
 {
-   ProviderModuleName = "SCXTestProviderModule";
+   ProviderModuleName = "SCXWkProviderModule";
    ProviderName = "SCX_TestProvider";
    CapabilityID = "1";
-   ClassName = "SCX_Test1";
+   ClassName = "SCX_Wk1";
    Namespaces = {"root/scx"};
    ProviderType = { 2, 5, 7 }; // Instance, Method, Query
    SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...
@@ -32,10 +32,10 @@ instance of PG_ProviderCapabilities
 
 instance of PG_ProviderCapabilities 
 {
-   ProviderModuleName = "SCXTestProviderModule";
+   ProviderModuleName = "SCXWkProviderModule";
    ProviderName = "SCX_TestProvider";
    CapabilityID = "2";
-   ClassName = "SCX_Test2";
+   ClassName = "SCX_Wk2";
    Namespaces = {"root/scx"};
    ProviderType = { 2, 5, 7 }; // Instance, Method, Query
    SupportedProperties = NULL; // All properties    ALTODO: This is not true for all POC providers...

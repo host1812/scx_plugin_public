@@ -18,8 +18,8 @@
 
 #include <scxcorelib/stringaid.h>
 
-#include /*<scxsystemlib/ */<testenumeration.h>
-#include /*<scxsystemlib/ */<testinstance.h>
+#include /*<scxsystemlib/ */<wkenumeration.h>
+#include /*<scxsystemlib/ */<wkinstance.h>
 
 using namespace std;
 using namespace SCXCoreLib;

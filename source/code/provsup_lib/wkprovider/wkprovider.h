@@ -21,7 +21,7 @@
 
 #include <scxproviderlib/cmpibase.h>
 
-#include /*scxsystemlib/ */<testenumeration.h>
+#include /*scxsystemlib/ */<wkenumeration.h>
 namespace SCXCore
 {
     /*----------------------------------------------------------------------------*/

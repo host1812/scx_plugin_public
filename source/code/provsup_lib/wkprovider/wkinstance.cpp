@@ -21,7 +21,7 @@
 
 #include <scxcorelib/stringaid.h>
 
-#include /*<scxsystemlib/ */<testinstance.h>
+#include /*<scxsystemlib/ */<wkinstance.h>
 
 using namespace std;
 using namespace SCXCoreLib;

@@ -14,7 +14,7 @@
 #define TESTENUMERATION_H
 
 #include <scxsystemlib/entityenumeration.h>
-#include /*<scxsystemlib/ */<testinstance.h>
+#include /*<scxsystemlib/ */<wkinstance.h>
 #include <scxcorelib/scxlog.h>
 
 namespace SCXSystemLib

@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "testprovider.h"
+#include "wkprovider.h"
 
 using namespace std;
 using namespace SCXProviderLib;

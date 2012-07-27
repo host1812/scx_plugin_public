@@ -46,7 +46,7 @@ namespace SCXCore {
         The Singleton thread lock will be held during this call.
 
     */
-    SCXTestProvider::SCXTestProvider() : BaseProvider(L"scx.core.providers.testprovider")
+    SCXTestProvider::SCXTestProvider() : BaseProvider(L"scx.core.providers.wkprovider")
     {
         SCX_LOGTRACE(m_log, L"SCXTestProvider default constructor");
 
